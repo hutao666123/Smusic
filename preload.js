@@ -193,6 +193,15 @@ contextBridge.exposeInMainWorld('electron', {
     return ipcRenderer.invoke('get-local-song-path', songId)
   },
 
+  /**
+   * 读取本地音频文件
+   * @param {string} filePath - 文件路径
+   * @returns {Promise<Object>} - 包含文件 buffer 的结果对象
+   */
+  readLocalAudio: (filePath) => {
+    return ipcRenderer.invoke('read-local-audio', filePath)
+  },
+
   // ==================== 下载功能 ====================
   /**
    * 下载单曲

@@ -1,9 +1,24 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, protocol } = require('electron')
 const path = require('path')
+const fs = require('fs')
 const isDev = require('electron-is-dev')
 const FileManager = require('./lib/FileManager')
 const PlaylistManager = require('./lib/PlaylistManager')
 const DownloadManager = require('./lib/DownloadManager')
+
+// 在 app ready 之前注册自定义协议
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'local-audio',
+    privileges: {
+      bypassCSP: true,
+      supportFetchAPI: true,
+      stream: true,
+      standard: true,
+      secure: true
+    }
+  }
+])
 
 let mainWindow
 let fileManager
@@ -453,23 +468,16 @@ function registerIpcHandlers() {
   ipcMain.handle('download-song', async (event, params) => {
     try {
       const { songId, songUrl, metadata } = params
-      console.log('下载参数:', { songId, songUrl, metadata })
+      console.log('=== IPC download-song 收到请求 ===')
+      console.log('参数:', { songId, songUrl, metadata })
       
       validateParams({ songId, songUrl, metadata }, ['songId', 'songUrl', 'metadata'])
       
       const result = await downloadManager.downloadSong(songId, songUrl, metadata)
       console.log('下载管理器返回:', result)
       
-      // 下载完成后添加到已下载歌单
-      if (result.success) {
-        console.log('添加到已下载歌单:', { metadata, localPath: result.localPath, fileSize: result.fileSize })
-        await playlistManager.addToDownloads(
-          metadata,
-          result.localPath,
-          result.fileSize,
-          result.quality
-        )
-      }
+      // 注意：不要在这里重复调用 addToDownloads
+      // DownloadManager 的 _executeDownload 方法已经在下载完成后调用了
       
       return createResponse(true, result)
     } catch (error) {
@@ -554,6 +562,34 @@ function registerIpcHandlers() {
     }
   })
 
+  // ==================== 读取本地音频文件 ====================
+  ipcMain.handle('read-local-audio', async (event, filePath) => {
+    try {
+      validateParams({ filePath }, ['filePath'])
+      
+      console.log('读取本地音频文件:', filePath)
+      
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        return createResponse(false, null, { message: '文件不存在' })
+      }
+      
+      // 读取文件为 Buffer
+      const buffer = fs.readFileSync(filePath)
+      
+      console.log('文件读取成功，大小:', buffer.length, '字节')
+      
+      // 返回 Buffer（会自动转换为 Uint8Array）
+      return createResponse(true, {
+        buffer: buffer,
+        size: buffer.length
+      })
+    } catch (error) {
+      console.error('读取本地音频文件失败:', error)
+      return createResponse(false, null, error)
+    }
+  })
+
   // ==================== 磁盘空间检查 ====================
   ipcMain.handle('check-disk-space', async () => {
     try {
@@ -590,6 +626,38 @@ function registerIpcHandlers() {
 }
 
 app.on('ready', async () => {
+  // 注册自定义协议用于加载本地音频文件
+  protocol.registerStreamProtocol('local-audio', (request, callback) => {
+    const url = request.url.replace('local-audio://', '')
+    try {
+      // 解码 URL 并规范化路径
+      const decodedPath = decodeURIComponent(url)
+      const normalizedPath = path.normalize(decodedPath)
+      
+      console.log('local-audio 协议请求:', normalizedPath)
+      
+      // 检查文件是否存在
+      if (fs.existsSync(normalizedPath)) {
+        // 使用流式传输
+        const stream = fs.createReadStream(normalizedPath)
+        callback({
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Accept-Ranges': 'bytes'
+          },
+          data: stream
+        })
+      } else {
+        console.error('文件不存在:', normalizedPath)
+        callback({ statusCode: 404 })
+      }
+    } catch (error) {
+      console.error('local-audio 协议错误:', error)
+      callback({ statusCode: 500 })
+    }
+  })
+  
   await initializeManagers()
   registerIpcHandlers()
   createWindow()

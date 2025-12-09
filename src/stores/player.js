@@ -51,9 +51,18 @@ export const usePlayerStore = defineStore('player', () => {
     // 优先使用歌曲对象中的 localPath（如果有）
     if (song.localPath) {
       try {
-        const localUrl = `file://${song.localPath}`
-        console.log('🎵 使用本地文件播放 (来自对象):', song.name, localUrl)
-        return { url: localUrl, isLocal: true, error: null }
+        console.log('🎵 读取本地文件 (来自对象):', song.name, song.localPath)
+        const result = await window.electron.readLocalAudio(song.localPath)
+        
+        if (result.success && result.data) {
+          // 将 buffer 转换为 Blob URL
+          const blob = new Blob([result.data.buffer], { type: 'audio/mpeg' })
+          const blobUrl = URL.createObjectURL(blob)
+          console.log('✅ 本地文件转换为 Blob URL 成功')
+          return { url: blobUrl, isLocal: true, error: null }
+        } else {
+          console.warn('读取本地文件失败:', result.error)
+        }
       } catch (error) {
         console.warn('本地文件访问失败，尝试查询:', error)
       }
@@ -66,9 +75,18 @@ export const usePlayerStore = defineStore('player', () => {
     
     if (localInfo && localInfo.localPath) {
       try {
-        const localUrl = `file://${localInfo.localPath}`
-        console.log('🎵 使用本地文件播放 (来自查询):', song.name, localUrl)
-        return { url: localUrl, isLocal: true, error: null }
+        console.log('🎵 读取本地文件 (来自查询):', song.name, localInfo.localPath)
+        const result = await window.electron.readLocalAudio(localInfo.localPath)
+        
+        if (result.success && result.data) {
+          // 将 buffer 转换为 Blob URL
+          const blob = new Blob([result.data.buffer], { type: 'audio/mpeg' })
+          const blobUrl = URL.createObjectURL(blob)
+          console.log('✅ 本地文件转换为 Blob URL 成功')
+          return { url: blobUrl, isLocal: true, error: null }
+        } else {
+          console.warn('读取本地文件失败:', result.error)
+        }
       } catch (error) {
         console.warn('本地文件访问失败，尝试在线播放:', error)
       }
