@@ -19,45 +19,73 @@
         </router-link>
       </div>
 
+      <!-- 我的音乐分组 -->
       <div class="menu-section">
         <h3 class="section-title">我的音乐</h3>
+        <router-link 
+          to="/local-playlist/local-favorites" 
+          class="menu-item" 
+          :class="{ active: isActive('/local-playlist/local-favorites') }"
+        >
+          <span class="icon">❤️</span>
+          <span class="label">我喜欢的音乐</span>
+          <span v-if="playlistStore.favorites.length > 0" class="count">{{ playlistStore.favorites.length }}</span>
+        </router-link>
+        <router-link 
+          to="/local-playlist/local-downloads" 
+          class="menu-item" 
+          :class="{ active: isActive('/local-playlist/local-downloads') }"
+        >
+          <span class="icon">💾</span>
+          <span class="label">已下载</span>
+          <span v-if="playlistStore.downloads.length > 0" class="count">{{ playlistStore.downloads.length }}</span>
+        </router-link>
+        <router-link 
+          to="/collected-playlists" 
+          class="menu-item" 
+          :class="{ active: isActive('/collected-playlists') }"
+        >
+          <span class="icon">📚</span>
+          <span class="label">收藏的歌单</span>
+          <span v-if="playlistStore.collectedPlaylists.length > 0" class="count">{{ playlistStore.collectedPlaylists.length }}</span>
+        </router-link>
+      </div>
+
+      <!-- 自定义歌单（可折叠） -->
+      <div class="menu-section">
+        <div class="section-header" @click="toggleCustomPlaylists">
+          <div class="section-title-wrapper">
+            <span class="collapse-icon" :class="{ collapsed: !showCustomPlaylists }">▼</span>
+            <h3 class="section-title">自定义歌单</h3>
+          </div>
+          <button class="add-btn" @click.stop="showCreatePlaylist" title="创建歌单">+</button>
+        </div>
+        <div v-show="showCustomPlaylists" class="custom-playlists-container">
+          <div v-if="playlistStore.customPlaylists.length === 0" class="empty-playlists">
+            <p>暂无自定义歌单</p>
+          </div>
+          <router-link
+            v-for="playlist in playlistStore.customPlaylists"
+            :key="playlist.id"
+            :to="`/local-playlist/${playlist.id}`"
+            class="playlist-item"
+            :class="{ active: isActive(`/local-playlist/${playlist.id}`) }"
+            :title="playlist.name"
+          >
+            <span class="playlist-icon">📋</span>
+            <span class="playlist-name">{{ playlist.name }}</span>
+            <span v-if="playlist.songs && playlist.songs.length > 0" class="count">{{ playlist.songs.length }}</span>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- 其他菜单 -->
+      <div class="menu-section">
+        <h3 class="section-title">其他</h3>
         <router-link to="/profile" class="menu-item" :class="{ active: isActive('/profile') }">
           <span class="icon">👤</span>
           <span class="label">个人中心</span>
         </router-link>
-        <div class="menu-item" @click="toggleLikeSongs">
-          <span class="icon">❤️</span>
-          <span class="label">我喜欢的</span>
-        </div>
-        <div class="menu-item" @click="toggleHistory">
-          <span class="icon">⏱️</span>
-          <span class="label">播放历史</span>
-        </div>
-        <div class="menu-item" @click="toggleDownloaded">
-          <span class="icon">💾</span>
-          <span class="label">已下载</span>
-        </div>
-      </div>
-
-      <!-- 我的歌单 -->
-      <div class="menu-section">
-        <div class="section-header">
-          <h3 class="section-title">我的歌单</h3>
-          <button class="add-btn" @click="showCreatePlaylist" title="创建歌单">+</button>
-        </div>
-        <div v-if="playlists.length === 0" class="empty-playlists">
-          <p>暂无歌单</p>
-        </div>
-        <div
-          v-for="playlist in playlists"
-          :key="playlist.id"
-          class="playlist-item"
-          @click="goToPlaylist(playlist.id)"
-          :title="playlist.name"
-        >
-          <span class="playlist-icon">📋</span>
-          <span class="playlist-name">{{ playlist.name }}</span>
-        </div>
       </div>
     </nav>
 
@@ -72,60 +100,31 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { usePlayerStore } from '../stores/player'
-import { useUserStore } from '../stores/user'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { usePlaylistStore } from '../stores/playlist'
 
-const router = useRouter()
 const route = useRoute()
-const playerStore = usePlayerStore()
-const userStore = useUserStore()
+const playlistStore = usePlaylistStore()
 
-const playlists = ref([])
-const showLikeSongs = ref(false)
-const showHistory = ref(false)
-const showDownloaded = ref(false)
+const showCustomPlaylists = ref(true)
 
 onMounted(async () => {
-  await loadPlaylists()
+  // 加载所有本地歌单数据
+  await playlistStore.loadAllPlaylists()
 })
-
-const loadPlaylists = async () => {
-  // 从 userStore 获取用户歌单
-  if (userStore.isLoggedIn) {
-    const userPlaylists = await userStore.fetchUserPlaylists()
-    if (userPlaylists && userPlaylists.length > 0) {
-      playlists.value = userPlaylists.slice(0, 10) // 显示前 10 个
-    }
-  }
-}
 
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')
 }
 
-const goToPlaylist = (id) => {
-  router.push(`/playlist/${id}`)
-}
-
-const toggleLikeSongs = () => {
-  showLikeSongs.value = !showLikeSongs.value
-  if (showLikeSongs.value) {
-    router.push('/profile?tab=likes')
-  }
-}
-
-const toggleHistory = () => {
-  showHistory.value = !showHistory.value
-}
-
-const toggleDownloaded = () => {
-  showDownloaded.value = !showDownloaded.value
+const toggleCustomPlaylists = () => {
+  showCustomPlaylists.value = !showCustomPlaylists.value
 }
 
 const showCreatePlaylist = () => {
   // TODO: 显示创建歌单对话框
+  // 这将在后续任务中实现
   console.log('创建歌单')
 }
 </script>
@@ -250,7 +249,44 @@ const showCreatePlaylist = () => {
   text-overflow: ellipsis;
 }
 
-/* 歌单 */
+/* 歌曲数量标签 */
+.count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+/* 折叠功能 */
+.section-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.3s;
+  display: inline-block;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+/* 自定义歌单容器 */
+.custom-playlists-container {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+/* 添加按钮 */
 .add-btn {
   background: rgba(102, 126, 234, 0.5);
   border: none;
@@ -264,6 +300,7 @@ const showCreatePlaylist = () => {
   align-items: center;
   justify-content: center;
   transition: background 0.3s;
+  flex-shrink: 0;
 }
 
 .add-btn:hover {
@@ -277,6 +314,7 @@ const showCreatePlaylist = () => {
   font-size: 12px;
 }
 
+/* 歌单项 */
 .playlist-item {
   display: flex;
   align-items: center;
@@ -289,11 +327,18 @@ const showCreatePlaylist = () => {
   transition: all 0.3s;
   font-size: 13px;
   overflow: hidden;
+  text-decoration: none;
 }
 
 .playlist-item:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
+}
+
+.playlist-item.active {
+  background: rgba(102, 126, 234, 0.3);
+  color: #667eea;
+  font-weight: 500;
 }
 
 .playlist-icon {

@@ -8,13 +8,6 @@
       </div>
     </div>
 
-    <!-- 返回按钮 -->
-    <button class="back-btn" @click="goBack">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-
     <div class="detail-container">
       <!-- 左侧：专辑封面区域 -->
       <div class="detail-left">
@@ -316,13 +309,10 @@ const goBack = () => {
 
 <style scoped>
 .song-detail {
-  position: fixed;
-  top: 0;
-  left: 240px;
-  right: 0;
-  bottom: 80px;
+  position: relative;
+  width: 100%;
+  height: 100%;
   color: white;
-  z-index: 100;
   overflow: hidden;
 }
 
@@ -376,34 +366,13 @@ const goBack = () => {
   }
 }
 
-/* 返回按钮 */
-.back-btn {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  background: transparent;
-  border: none;
-  color: white;
-  width: 48px;
-  height: 48px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 10;
-}
-
-.back-btn:hover {
-  transform: translateX(-4px);
-  opacity: 0.8;
-}
+/* 返回按钮 - 移除，使用标题栏的返回按钮 */
 
 .detail-container {
   position: relative;
   display: flex;
   height: 100%;
-  padding: 60px;
+  padding: 40px 60px;
   gap: 80px;
   overflow: hidden;
   z-index: 1;

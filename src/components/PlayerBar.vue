@@ -19,6 +19,9 @@
     </div>
 
     <div class="player-controls">
+      <button @click="changePlayMode" class="control-btn mode-control-btn" :title="playModeText">
+        {{ playModeIcon }}
+      </button>
       <button @click="prev" class="control-btn">⏮</button>
       <button @click="togglePlay" class="control-btn play-btn">
         {{ isPlaying ? '⏸' : '▶' }}
@@ -56,6 +59,15 @@
     </div>
 
     <div class="player-extras">
+      <button 
+        v-if="currentSong"
+        @click="toggleFavorite" 
+        class="extra-btn favorite-btn" 
+        :class="{ 'is-favorite': isFavorited }"
+        :title="isFavorited ? '取消喜欢' : '喜欢'"
+      >
+        {{ isFavorited ? '❤️' : '🤍' }}
+      </button>
       <button @click="goToLyrics" class="extra-btn lyrics-btn" title="歌词">
         📝
       </button>
@@ -69,21 +81,62 @@
       <div class="playlist-content" ref="playlistContent" tabindex="-1" @blur="handleBlur">
         <div class="playlist-header">
           <h3>播放列表 ({{ playlist.length }})</h3>
-          <button @click="clearPlaylist" class="clear-btn">清空</button>
+          <div class="header-controls">
+            <button @click="clearPlaylist" class="clear-btn">清空</button>
+            <div class="play-mode-selector">
+              <button 
+                @click="changePlayMode" 
+                class="mode-btn"
+                :title="playModeText"
+              >
+                {{ playModeIcon }}
+              </button>
+            </div>
+          </div>
         </div>
         <div class="playlist-items">
           <div
             v-for="(song, index) in playlist"
-            :key="song.id"
+            :key="song.id + '-' + index"
             :class="['playlist-item', { active: index === currentIndex }]"
+            draggable="true"
+            @dragstart="handleDragStart(index, $event)"
+            @dragover.prevent="handleDragOver(index, $event)"
+            @drop="handleDrop(index, $event)"
+            @dragend="handleDragEnd"
             @click="playSongAtIndex(index)"
           >
             <span class="song-index">{{ index + 1 }}</span>
+            <div class="song-cover-tiny">
+              <img v-if="song.cover" :src="song.cover" :alt="song.name" />
+              <span v-else>🎵</span>
+            </div>
             <div class="song-info-item">
               <div class="song-name-item">{{ song.name }}</div>
               <div class="song-artist-item">{{ song.artist }}</div>
             </div>
-            <button @click.stop="removeSong(index)" class="remove-btn">×</button>
+            <div class="song-actions">
+              <button @click.stop="toggleActions(index)" class="more-btn">⋮</button>
+              <div v-if="activeActionIndex === index" class="action-menu">
+                <button @click.stop="removeSong(index)" class="action-item">
+                  <span>🗑️</span> 移除
+                </button>
+                <button 
+                  @click.stop="moveSongUp(index)" 
+                  class="action-item"
+                  :disabled="index === 0"
+                >
+                  <span>⬆️</span> 上移
+                </button>
+                <button 
+                  @click.stop="moveSongDown(index)" 
+                  class="action-item"
+                  :disabled="index === playlist.length - 1"
+                >
+                  <span>⬇️</span> 下移
+                </button>
+              </div>
+            </div>
           </div>
           <div v-if="playlist.length === 0" class="empty-playlist">
             播放列表为空
@@ -98,15 +151,20 @@
 import { computed, onMounted, watch, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
+import { usePlaylistStore } from '../stores/playlist'
 import { getSongDetail } from '../api/music'
 import audioPlayer from '../services/audioPlayer'
 
 const router = useRouter()
 const playerStore = usePlayerStore()
+const playlistStore = usePlaylistStore()
 
 const songCover = ref('')
 const showPlaylist = ref(false)
 const playlistContent = ref(null)
+const activeActionIndex = ref(null)
+const draggedIndex = ref(null)
+const playMode = ref('order') // 'order' | 'random' | 'loop'
 
 const currentSong = computed(() => playerStore.currentSong)
 const isPlaying = computed(() => playerStore.isPlaying)
@@ -116,6 +174,28 @@ const volume = computed(() => playerStore.volume)
 const playlist = computed(() => playerStore.playlist)
 const currentIndex = computed(() => playerStore.currentIndex)
 
+// 喜欢状态
+const isFavorited = computed(() => {
+  if (!currentSong.value || !currentSong.value.id) return false
+  return playlistStore.isFavorite(currentSong.value.id)
+})
+
+const playModeIcon = computed(() => {
+  switch (playMode.value) {
+    case 'random': return '🔀'
+    case 'loop': return '🔁'
+    default: return '➡️'
+  }
+})
+
+const playModeText = computed(() => {
+  switch (playMode.value) {
+    case 'random': return '随机播放'
+    case 'loop': return '循环播放'
+    default: return '顺序播放'
+  }
+})
+
 const progressPercent = computed(() => {
   return duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0
 })
@@ -124,33 +204,76 @@ onMounted(() => {
   audioPlayer.setPlayerStore(playerStore)
   // 初始化音量
   audioPlayer.setVolume(playerStore.volume)
+  // 设置播放模式获取函数
+  audioPlayer.getPlayMode = () => playMode.value
 })
 
-// 监听播放状态变化
+// 监听播放状态变化（仅控制暂停/继续，不触发新歌曲加载）
 watch(isPlaying, (newVal) => {
-  if (newVal) {
-    audioPlayer.play()
-  } else {
-    audioPlayer.pause()
+  // 只有在已经有音频源的情况下才控制播放/暂停
+  if (audioPlayer.audio.src) {
+    if (newVal) {
+      audioPlayer.audio.play()
+    } else {
+      audioPlayer.audio.pause()
+    }
   }
 })
 
 // 监听当前歌曲变化
-watch(currentSong, async (newSong) => {
-  if (newSong && newSong.id) {
+watch(currentSong, async (newSong, oldSong) => {
+  // 只有在歌曲真正改变时才触发播放
+  if (newSong && newSong.id && newSong.id !== oldSong?.id) {
     audioPlayer.playCurrentSong()
     
     // 获取歌曲详情以获取图片
-    try {
-      const res = await getSongDetail(newSong.id)
-      if (res.data.songs && res.data.songs[0]) {
-        const song = res.data.songs[0]
-        if (song.al && song.al.picUrl) {
-          songCover.value = song.al.picUrl
+    if (!fetchedCovers.has(newSong.id)) {
+      fetchedCovers.add(newSong.id)
+      try {
+        const res = await getSongDetail(newSong.id)
+        if (res.data.songs && res.data.songs[0]) {
+          const song = res.data.songs[0]
+          if (song.al && song.al.picUrl) {
+            songCover.value = song.al.picUrl
+            // 更新播放列表中的封面
+            if (!newSong.cover) {
+              newSong.cover = song.al.picUrl
+            }
+          }
         }
+      } catch (error) {
+        console.error('获取歌曲详情失败:', error)
       }
-    } catch (error) {
-      console.error('获取歌曲详情失败:', error)
+    } else if (newSong.cover) {
+      // 如果已经有封面，直接使用
+      songCover.value = newSong.cover
+    }
+  }
+})
+
+// 监听播放列表变化，为没有封面的歌曲获取封面
+// 使用 Set 记录已经请求过的歌曲，避免重复请求
+const fetchedCovers = new Set()
+
+watch(playlist, async (newPlaylist, oldPlaylist) => {
+  // 只处理新增的歌曲
+  const oldIds = new Set(oldPlaylist?.map(s => s.id) || [])
+  const newSongs = newPlaylist.filter(song => !oldIds.has(song.id))
+  
+  for (const song of newSongs) {
+    if (song.id && !song.cover && !fetchedCovers.has(song.id)) {
+      fetchedCovers.add(song.id)
+      try {
+        const res = await getSongDetail(song.id)
+        if (res.data.songs && res.data.songs[0]) {
+          const songDetail = res.data.songs[0]
+          if (songDetail.al && songDetail.al.picUrl) {
+            song.cover = songDetail.al.picUrl
+          }
+        }
+      } catch (error) {
+        console.error('获取歌曲封面失败:', error)
+      }
     }
   }
 })
@@ -160,13 +283,13 @@ const togglePlay = () => {
 }
 
 const next = () => {
+  // 只改变索引，让 watch(currentSong) 自动触发播放
   playerStore.next()
-  audioPlayer.playCurrentSong()
 }
 
 const prev = () => {
+  // 只改变索引，让 watch(currentSong) 自动触发播放
   playerStore.prev()
-  audioPlayer.playCurrentSong()
 }
 
 const handleProgressChange = (e) => {
@@ -216,8 +339,8 @@ const handleBlur = (e) => {
 }
 
 const playSongAtIndex = (index) => {
+  // 只改变索引，让 watch(currentSong) 自动触发播放
   playerStore.currentIndex = index
-  audioPlayer.playCurrentSong()
 }
 
 const removeSong = (index) => {
@@ -225,11 +348,19 @@ const removeSong = (index) => {
     playerStore.clearPlaylist()
     audioPlayer.stop()
   } else {
+    const wasCurrentSong = index === currentIndex.value
     playerStore.playlist.splice(index, 1)
+    
     if (index < currentIndex.value) {
       playerStore.currentIndex--
-    } else if (index === currentIndex.value) {
-      audioPlayer.playCurrentSong()
+    } else if (wasCurrentSong) {
+      // 删除当前歌曲后，索引不变但歌曲对象会变化
+      // 需要强制触发 watch，通过临时改变索引实现
+      const tempIndex = playerStore.currentIndex
+      playerStore.currentIndex = -1
+      nextTick(() => {
+        playerStore.currentIndex = Math.min(tempIndex, playlist.value.length - 1)
+      })
     }
   }
 }
@@ -250,6 +381,185 @@ const goToSongDetail = () => {
 
 const goToLyrics = () => {
   router.push('/lyrics')
+}
+
+const toggleActions = (index) => {
+  activeActionIndex.value = activeActionIndex.value === index ? null : index
+}
+
+const moveSongUp = (index) => {
+  if (index > 0) {
+    const temp = playlist.value[index]
+    playlist.value.splice(index, 1)
+    playlist.value.splice(index - 1, 0, temp)
+    
+    // 更新当前播放索引
+    if (currentIndex.value === index) {
+      playerStore.currentIndex = index - 1
+    } else if (currentIndex.value === index - 1) {
+      playerStore.currentIndex = index
+    }
+  }
+  activeActionIndex.value = null
+}
+
+const moveSongDown = (index) => {
+  if (index < playlist.value.length - 1) {
+    const temp = playlist.value[index]
+    playlist.value.splice(index, 1)
+    playlist.value.splice(index + 1, 0, temp)
+    
+    // 更新当前播放索引
+    if (currentIndex.value === index) {
+      playerStore.currentIndex = index + 1
+    } else if (currentIndex.value === index + 1) {
+      playerStore.currentIndex = index
+    }
+  }
+  activeActionIndex.value = null
+}
+
+const handleDragStart = (index, event) => {
+  draggedIndex.value = index
+  event.dataTransfer.effectAllowed = 'move'
+  event.target.style.opacity = '0.5'
+}
+
+const handleDragOver = (index, event) => {
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'move'
+}
+
+const handleDrop = (index, event) => {
+  event.preventDefault()
+  if (draggedIndex.value !== null && draggedIndex.value !== index) {
+    const draggedSong = playlist.value[draggedIndex.value]
+    const newPlaylist = [...playlist.value]
+    
+    // 移除拖拽的歌曲
+    newPlaylist.splice(draggedIndex.value, 1)
+    // 插入到新位置
+    newPlaylist.splice(index, 0, draggedSong)
+    
+    // 更新播放列表
+    playerStore.playlist = newPlaylist
+    
+    // 更新当前播放索引
+    if (currentIndex.value === draggedIndex.value) {
+      playerStore.currentIndex = index
+    } else if (draggedIndex.value < currentIndex.value && index >= currentIndex.value) {
+      playerStore.currentIndex = currentIndex.value - 1
+    } else if (draggedIndex.value > currentIndex.value && index <= currentIndex.value) {
+      playerStore.currentIndex = currentIndex.value + 1
+    }
+  }
+}
+
+const handleDragEnd = (event) => {
+  event.target.style.opacity = '1'
+  draggedIndex.value = null
+}
+
+const changePlayMode = () => {
+  const modes = ['order', 'random', 'loop']
+  const currentModeIndex = modes.indexOf(playMode.value)
+  const newMode = modes[(currentModeIndex + 1) % modes.length]
+  
+  // 如果切换到随机模式，打乱播放列表
+  if (newMode === 'random' && playlist.value.length > 0) {
+    const currentSongData = currentSong.value
+    const newPlaylist = [...playlist.value]
+    
+    // Fisher-Yates 洗牌算法
+    for (let i = newPlaylist.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newPlaylist[i], newPlaylist[j]] = [newPlaylist[j], newPlaylist[i]]
+    }
+    
+    // 更新播放列表
+    playerStore.playlist = newPlaylist
+    
+    // 找到当前歌曲在新列表中的位置
+    if (currentSongData) {
+      const newIndex = newPlaylist.findIndex(song => song.id === currentSongData.id)
+      if (newIndex !== -1) {
+        playerStore.currentIndex = newIndex
+      }
+    }
+  }
+  
+  playMode.value = newMode
+  console.log('播放模式切换为:', playModeText.value)
+}
+
+// 切换喜欢状态
+const toggleFavorite = async () => {
+  if (!currentSong.value || !currentSong.value.id) return
+  
+  const song = currentSong.value
+  const songData = {
+    id: song.id,
+    name: song.name,
+    artists: song.artist ? [{ name: song.artist }] : [],
+    album: {
+      name: song.album || '',
+      picUrl: song.cover || songCover.value || ''
+    },
+    duration: Math.round((song.duration || 0) * 1000)
+  }
+  
+  if (isFavorited.value) {
+    await playlistStore.removeFromFavorites(song.id)
+  } else {
+    const success = await playlistStore.addToFavorites(songData)
+    if (success) {
+      createFavoriteAnimation()
+    }
+  }
+}
+
+// 创建喜欢动画
+const createFavoriteAnimation = () => {
+  const button = document.querySelector('.favorite-btn')
+  if (!button) return
+  
+  const rect = button.getBoundingClientRect()
+  
+  // 创建多个心形元素
+  for (let i = 0; i < 5; i++) {
+    const heart = document.createElement('div')
+    heart.className = 'flying-heart'
+    heart.innerHTML = '❤️'
+    
+    // 设置起始位置
+    const startX = rect.left + rect.width / 2
+    const startY = rect.top + rect.height / 2
+    heart.style.left = startX + 'px'
+    heart.style.top = startY + 'px'
+    
+    document.body.appendChild(heart)
+    
+    // 随机方向
+    const angle = (Math.random() * 120 - 60) * Math.PI / 180
+    const distance = 50 + Math.random() * 50
+    const deltaX = Math.cos(angle) * distance
+    const deltaY = -Math.abs(Math.sin(angle)) * distance - 30
+    
+    // 延迟启动动画
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          heart.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.5) rotate(${Math.random() * 360}deg)`
+          heart.style.opacity = '0'
+        })
+      })
+    }, i * 50)
+    
+    // 动画结束后移除元素
+    setTimeout(() => {
+      heart.remove()
+    }, 800 + i * 50)
+  }
 }
 </script>
 
@@ -364,6 +674,16 @@ const goToLyrics = () => {
   background: rgba(102, 126, 234, 1);
 }
 
+.mode-control-btn {
+  background: rgba(102, 126, 234, 0.6);
+  font-size: 18px;
+}
+
+.mode-control-btn:hover {
+  background: rgba(102, 126, 234, 0.8);
+  transform: scale(1.05);
+}
+
 .player-progress {
   flex: 1;
   display: flex;
@@ -437,6 +757,35 @@ const goToLyrics = () => {
   cursor: pointer;
 }
 
+.favorite-btn {
+  font-size: 20px;
+  transition: all 0.3s;
+}
+
+.favorite-btn.is-favorite {
+  background: rgba(234, 102, 126, 0.8);
+  animation: heartbeat 0.6s ease-in-out;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.15);
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.15);
+  }
+}
+
 .playlist-btn {
   font-size: 24px;
   font-weight: bold;
@@ -459,16 +808,16 @@ const goToLyrics = () => {
 .playlist-content {
   background: rgba(30, 30, 30, 0.98);
   backdrop-filter: blur(20px);
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px 0 0 0;
   width: 420px;
   max-height: 500px;
   display: flex;
   flex-direction: column;
   color: white;
-  margin-right: 20px;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: none;
+  border-right: none;
   pointer-events: auto;
   outline: none;
 }
@@ -486,6 +835,12 @@ const goToLyrics = () => {
   font-size: 18px;
 }
 
+.header-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .clear-btn {
   background: rgba(102, 126, 234, 0.6);
   border: none;
@@ -500,6 +855,31 @@ const goToLyrics = () => {
 .clear-btn:hover {
   background: rgba(102, 126, 234, 0.9);
   transform: translateY(-1px);
+}
+
+.play-mode-selector {
+  display: flex;
+  align-items: center;
+}
+
+.mode-btn {
+  background: rgba(102, 126, 234, 0.6);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.mode-btn:hover {
+  background: rgba(102, 126, 234, 0.9);
+  transform: scale(1.05);
 }
 
 .playlist-items {
@@ -520,8 +900,9 @@ const goToLyrics = () => {
   gap: 12px;
   padding: 12px;
   border-radius: 6px;
-  cursor: pointer;
+  cursor: move;
   transition: background 0.3s;
+  position: relative;
 }
 
 .playlist-item:hover {
@@ -535,7 +916,30 @@ const goToLyrics = () => {
 .song-index {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
-  min-width: 30px;
+  min-width: 25px;
+  text-align: center;
+}
+
+.song-cover-tiny {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.song-cover-tiny img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.song-cover-tiny span {
+  font-size: 20px;
 }
 
 .song-info-item {
@@ -559,15 +963,20 @@ const goToLyrics = () => {
   text-overflow: ellipsis;
 }
 
-.remove-btn {
+.song-actions {
+  position: relative;
+}
+
+.more-btn {
   background: rgba(102, 126, 234, 0.5);
   border: none;
   color: white;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: bold;
   line-height: 1;
   transition: all 0.3s;
   display: flex;
@@ -575,9 +984,52 @@ const goToLyrics = () => {
   justify-content: center;
 }
 
-.remove-btn:hover {
-  background: rgba(255, 59, 48, 0.8);
-  transform: scale(1.1);
+.more-btn:hover {
+  background: rgba(102, 126, 234, 0.8);
+  transform: scale(1.05);
+}
+
+.action-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: rgba(20, 20, 20, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 120px;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.action-item:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.6);
+}
+
+.action-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.action-item span {
+  font-size: 16px;
 }
 
 .empty-playlist {
@@ -585,5 +1037,17 @@ const goToLyrics = () => {
   padding: 40px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
+}
+</style>
+
+<style>
+/* 全局样式：飞行心形动画 */
+.flying-heart {
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  z-index: 9999;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform, opacity;
 }
 </style>

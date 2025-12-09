@@ -130,6 +130,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
 }
 
 .lyrics-container {

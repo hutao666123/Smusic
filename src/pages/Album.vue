@@ -1,118 +1,86 @@
 <template>
-  <div class="playlist">
+  <div class="album-page">
     <div v-if="loading" class="loading">加载中...</div>
-
-    <div v-else-if="playlist" class="playlist-content">
-      <div class="playlist-header">
-        <div class="playlist-cover">
-          <img :src="playlist.coverImgUrl" :alt="playlist.name" />
-        </div>
-        <div class="playlist-info">
-          <h1>{{ playlist.name }}</h1>
-          <p class="playlist-desc">{{ playlist.description }}</p>
-          <div class="playlist-meta">
-            <span class="meta-item">
-              <span class="meta-icon">👤</span>
-              <span class="meta-label">{{ playlist.creator?.nickname }}</span>
-            </span>
-            <span class="meta-item">
-              <span class="meta-icon">🎵</span>
-              <span class="meta-label">{{ playlist.trackCount }} 首歌曲</span>
-            </span>
-            <span class="meta-item">
-              <span class="meta-icon">❤️</span>
-              <span class="meta-label">{{ formatCount(playlist.subscribedCount) }} 收藏</span>
-            </span>
+    <div v-else-if="album" class="album-content">
+      <div class="album-header">
+        <img :src="album.picUrl" :alt="album.name" class="album-cover" />
+        <div class="album-info">
+          <h1>{{ album.name }}</h1>
+          <p class="artist">{{ album.artist?.name }}</p>
+          <p class="desc">{{ album.description }}</p>
+          <div class="album-meta">
+            <span>发行时间: {{ formatDate(album.publishTime) }}</span>
+            <span>歌曲数: {{ songs.length }}</span>
           </div>
           <div class="action-buttons">
-            <button @click="playAll" class="play-all-btn">
-              <span class="play-icon">▶</span>
-              播放全部
-            </button>
-            <button @click="downloadAll" class="download-all-btn" :disabled="songs.length === 0">
-              <span class="download-icon">⬇</span>
-              下载全部
-            </button>
-            <button @click="addAllToPlaylist" class="add-all-btn" :disabled="songs.length === 0">
-              <span class="add-icon">➕</span>
-              添加全部到歌单
-            </button>
+            <button @click="playAll" class="play-all-btn">▶ 播放全部</button>
+            <button @click="downloadAll" class="download-all-btn" :disabled="songs.length === 0">⬇ 下载全部</button>
+            <button @click="addAllToPlaylist" class="add-all-btn" :disabled="songs.length === 0">➕ 添加全部到歌单</button>
           </div>
         </div>
       </div>
 
-      <div class="playlist-songs">
-        <div class="songs-header">
-          <h3>歌曲列表</h3>
-        </div>
-        <div class="songs-list">
-          <div
-            v-for="(song, index) in songs"
-            :key="song.id"
-            class="song-item"
-            @click="playSong(song, index)"
-            @contextmenu.prevent="showContextMenu($event, song)"
-          >
-            <span class="song-index">{{ index + 1 }}</span>
-            <div class="song-details">
-              <div class="song-name">{{ song.name }}</div>
-              <div class="song-artist">
-                {{ song.ar?.map(a => a.name).join(' / ') || '未知艺术家' }}
-              </div>
-            </div>
-            <span class="song-duration">{{ formatTime(song.dt / 1000) }}</span>
-            
-            <div class="song-actions">
-              <!-- 喜欢按钮 -->
-              <button 
-                @click.stop="toggleFavorite(song, $event)" 
-                class="action-btn favorite-btn-list" 
-                :class="{ 'is-favorite': isFavorite(song.id) }"
-                :title="isFavorite(song.id) ? '取消喜欢' : '喜欢'"
-              >
-                {{ isFavorite(song.id) ? '❤️' : '🤍' }}
-              </button>
+      <div class="songs-list">
+        <div
+          v-for="(song, index) in songs"
+          :key="song.id"
+          class="song-item"
+          @click="playSong(song, index)"
+          @contextmenu.prevent="showContextMenu($event, song)"
+        >
+          <span class="song-index">{{ index + 1 }}</span>
+          <div class="song-info">
+            <div class="song-name">{{ song.name }}</div>
+            <div class="song-artist">{{ song.ar?.map(a => a.name).join(' / ') }}</div>
+          </div>
+          <span class="song-duration">{{ formatTime(song.dt / 1000) }}</span>
+          
+          <div class="song-actions">
+            <!-- 喜欢按钮 -->
+            <button 
+              @click.stop="toggleFavorite(song, $event)" 
+              class="action-btn favorite-btn-list" 
+              :class="{ 'is-favorite': isFavorite(song.id) }"
+              :title="isFavorite(song.id) ? '取消喜欢' : '喜欢'"
+            >
+              {{ isFavorite(song.id) ? '❤️' : '🤍' }}
+            </button>
 
-              <!-- 添加到播放列表按钮 -->
-              <button 
-                @click.stop="addToPlaylist(song, $event)" 
-                class="action-btn add-btn" 
-                title="添加到播放列表"
-              >
-                ➕
-              </button>
+            <!-- 添加到播放列表按钮 -->
+            <button 
+              @click.stop="addToPlaylist(song)" 
+              class="action-btn add-btn"
+              title="添加到播放列表"
+            >
+              ➕
+            </button>
 
-              <!-- 下载按钮 -->
-              <button
-                v-if="!isDownloaded(song.id)"
-                @click.stop="downloadSong(song)"
-                class="action-btn download-btn"
-                :class="{ 'downloading': isDownloading(song.id) }"
-                :disabled="isDownloading(song.id)"
-                :title="isDownloading(song.id) ? '下载中...' : '下载'"
-              >
-                <span v-if="isDownloading(song.id)" class="download-progress">
-                  {{ getDownloadProgress(song.id) }}%
-                </span>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </button>
-
-              <!-- 已下载标记 -->
-              <span v-else class="downloaded-badge" title="已下载">
-                💾
+            <!-- 下载按钮 -->
+            <button
+              v-if="!isDownloaded(song.id)"
+              @click.stop="downloadSong(song)"
+              class="action-btn download-btn"
+              :class="{ 'downloading': isDownloading(song.id) }"
+              :disabled="isDownloading(song.id)"
+              :title="isDownloading(song.id) ? '下载中...' : '下载'"
+            >
+              <span v-if="isDownloading(song.id)" class="download-progress">
+                {{ getDownloadProgress(song.id) }}%
               </span>
-            </div>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+
+            <!-- 已下载标记 -->
+            <span v-else class="downloaded-badge" title="已下载">
+              💾
+            </span>
           </div>
         </div>
       </div>
-    </div>
-
-    <div v-else class="error">
-      加载歌单失败
     </div>
 
     <!-- Toast 提示 -->
@@ -152,12 +120,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { usePlaylistStore } from '../stores/playlist'
 import { useDownloadStore } from '../stores/download'
-import { getPlaylistDetail } from '../api/music'
+import { getAlbumDetail } from '../api/music'
 import AddToPlaylistDialog from '../components/AddToPlaylistDialog.vue'
 
 const route = useRoute()
@@ -165,7 +133,7 @@ const playerStore = usePlayerStore()
 const playlistStore = usePlaylistStore()
 const downloadStore = useDownloadStore()
 
-const playlist = ref(null)
+const album = ref(null)
 const songs = ref([])
 const loading = ref(true)
 const toast = ref({
@@ -188,12 +156,13 @@ const selectedSong = ref(null)
 const selectedSongs = ref([])
 
 onMounted(async () => {
+  const albumId = route.params.id
   try {
-    const res = await getPlaylistDetail(route.params.id)
-    playlist.value = res.data.playlist
-    songs.value = res.data.playlist?.tracks || []
+    const res = await getAlbumDetail(albumId)
+    album.value = res.data.album
+    songs.value = res.data.songs || []
   } catch (error) {
-    console.error('加载歌单失败:', error)
+    console.error('获取专辑详情失败:', error)
   } finally {
     loading.value = false
   }
@@ -201,12 +170,12 @@ onMounted(async () => {
 
 const playAll = () => {
   playerStore.clearPlaylist()
-  songs.value.forEach(s => {
+  songs.value.forEach(song => {
     playerStore.addToPlaylist({
-      id: s.id,
-      name: s.name,
-      artist: s.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-      duration: s.dt / 1000
+      id: song.id,
+      name: song.name,
+      artist: song.ar?.map(a => a.name).join(' / '),
+      duration: song.dt / 1000
     })
   })
   playerStore.play()
@@ -214,82 +183,26 @@ const playAll = () => {
 
 const playSong = (song, index) => {
   playerStore.clearPlaylist()
-  // 从点击的歌曲开始添加
-  for (let i = index; i < songs.value.length; i++) {
-    const s = songs.value[i]
-    playerStore.addToPlaylist({
-      id: s.id,
-      name: s.name,
-      artist: s.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-      duration: s.dt / 1000
-    })
-  }
+  songs.value.forEach((s, i) => {
+    if (i >= index) {
+      playerStore.addToPlaylist({
+        id: s.id,
+        name: s.name,
+        artist: s.ar?.map(a => a.name).join(' / '),
+        duration: s.dt / 1000
+      })
+    }
+  })
   playerStore.play()
 }
 
-const addToPlaylist = (song, event) => {
+const addToPlaylist = (song) => {
   playerStore.addToPlaylist({
     id: song.id,
     name: song.name,
     artist: song.ar?.map(a => a.name).join(' / ') || '未知艺术家',
     duration: song.dt / 1000
   })
-  
-  // 创建飞行音符动画
-  createFlyingNote(event)
-}
-
-const createFlyingNote = (event) => {
-  const button = event.currentTarget
-  const rect = button.getBoundingClientRect()
-  
-  // 创建音符元素
-  const note = document.createElement('div')
-  note.className = 'flying-note'
-  note.innerHTML = '♪'
-  
-  // 设置起始位置
-  const startX = rect.left + rect.width / 2
-  const startY = rect.top + rect.height / 2
-  note.style.left = startX + 'px'
-  note.style.top = startY + 'px'
-  
-  document.body.appendChild(note)
-  
-  // 获取播放器位置（底部中间）
-  const targetX = window.innerWidth / 2
-  const targetY = window.innerHeight - 60
-  
-  // 计算移动距离
-  const deltaX = targetX - startX
-  const deltaY = targetY - startY
-  
-  // 使用requestAnimationFrame确保动画触发
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      note.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.3) rotate(360deg)`
-      note.style.opacity = '0'
-    })
-  })
-  
-  // 动画结束后移除元素
-  setTimeout(() => {
-    note.remove()
-  }, 1000)
-}
-
-const formatTime = (seconds) => {
-  if (!seconds || isNaN(seconds)) return '0:00'
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-const formatCount = (count) => {
-  if (count >= 10000) {
-    return (count / 10000).toFixed(1) + '万'
-  }
-  return count
 }
 
 // 检查是否喜欢
@@ -304,9 +217,9 @@ const toggleFavorite = async (song, event) => {
     name: song.name,
     artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
     album: {
-      id: song.al?.id || '',
-      name: song.al?.name || '',
-      picUrl: song.al?.picUrl || ''
+      id: song.al?.id || album.value?.id || '',
+      name: song.al?.name || album.value?.name || '',
+      picUrl: song.al?.picUrl || album.value?.picUrl || ''
     },
     duration: song.dt || 0
   }
@@ -362,6 +275,17 @@ const createFavoriteAnimation = (event) => {
   }
 }
 
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+const formatDate = (timestamp) => {
+  const date = new Date(timestamp)
+  return date.toLocaleDateString('zh-CN')
+}
+
 // 下载单曲
 const downloadSong = async (song) => {
   const songData = {
@@ -369,9 +293,9 @@ const downloadSong = async (song) => {
     name: song.name,
     artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
     album: {
-      id: song.al?.id || '',
-      name: song.al?.name || '',
-      picUrl: song.al?.picUrl || ''
+      id: song.al?.id || album.value?.id || '',
+      name: song.al?.name || album.value?.name || '',
+      picUrl: song.al?.picUrl || album.value?.picUrl || ''
     },
     duration: song.dt || 0
   }
@@ -395,9 +319,9 @@ const downloadAll = async () => {
     name: song.name,
     artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
     album: {
-      id: song.al?.id || '',
-      name: song.al?.name || '',
-      picUrl: song.al?.picUrl || ''
+      id: song.al?.id || album.value?.id || '',
+      name: song.al?.name || album.value?.name || '',
+      picUrl: song.al?.picUrl || album.value?.picUrl || ''
     },
     duration: song.dt || 0
   }))
@@ -467,9 +391,9 @@ const contextMenuAddToPlaylist = () => {
       name: song.name,
       artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
       album: {
-        id: song.al?.id || '',
-        name: song.al?.name || '',
-        picUrl: song.al?.picUrl || ''
+        id: song.al?.id || album.value?.id || '',
+        name: song.al?.name || album.value?.name || '',
+        picUrl: song.al?.picUrl || album.value?.picUrl || ''
       },
       duration: song.dt || 0
     }
@@ -487,9 +411,9 @@ const contextMenuToggleFavorite = async () => {
       name: song.name,
       artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
       album: {
-        id: song.al?.id || '',
-        name: song.al?.name || '',
-        picUrl: song.al?.picUrl || ''
+        id: song.al?.id || album.value?.id || '',
+        name: song.al?.name || album.value?.name || '',
+        picUrl: song.al?.picUrl || album.value?.picUrl || ''
       },
       duration: song.dt || 0
     }
@@ -521,9 +445,9 @@ const addAllToPlaylist = () => {
     name: song.name,
     artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
     album: {
-      id: song.al?.id || '',
-      name: song.al?.name || '',
-      picUrl: song.al?.picUrl || ''
+      id: song.al?.id || album.value?.id || '',
+      name: song.al?.name || album.value?.name || '',
+      picUrl: song.al?.picUrl || album.value?.picUrl || ''
     },
     duration: song.dt || 0
   }))
@@ -553,210 +477,114 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.playlist {
-  color: white;
+.album-page {
   padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+  color: white;
 }
 
-.loading,
-.error {
+.loading {
   text-align: center;
-  padding: 60px;
+  padding: 40px;
   font-size: 18px;
 }
 
-.playlist-content {
-  animation: fadeIn 0.4s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.playlist-header {
+.album-header {
   display: flex;
-  gap: 40px;
-  margin-bottom: 50px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-  padding: 30px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  gap: 30px;
+  margin-bottom: 40px;
 }
 
-.playlist-cover {
-  flex: 0 0 220px;
-  width: 220px;
-  height: 220px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  transition: transform 0.3s;
-}
-
-.playlist-cover:hover {
-  transform: scale(1.02);
-}
-
-.playlist-cover img {
-  width: 100%;
-  height: 100%;
+.album-cover {
+  width: 250px;
+  height: 250px;
+  border-radius: 8px;
   object-fit: cover;
 }
 
-.playlist-info {
+.album-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 15px;
 }
 
-.playlist-info h1 {
-  margin: 0;
-  font-size: 36px;
-  font-weight: bold;
-  line-height: 1.2;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+.album-info h1 {
+  margin: 0 0 10px 0;
+  font-size: 32px;
 }
 
-.playlist-desc {
-  margin: 0;
+.artist {
+  font-size: 18px;
   color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 15px 0;
+}
+
+.desc {
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 15px 0;
   line-height: 1.6;
-  font-size: 14px;
-  max-height: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
 }
 
-.playlist-meta {
+.album-meta {
   display: flex;
-  gap: 25px;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.meta-icon {
-  font-size: 16px;
+  gap: 20px;
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .play-all-btn {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: rgba(102, 126, 234, 0.8);
   border: none;
   color: white;
-  padding: 14px 32px;
-  border-radius: 30px;
+  padding: 12px 30px;
+  border-radius: 25px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: bold;
   transition: all 0.3s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
-  align-self: flex-start;
 }
 
 .play-all-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-}
-
-.play-icon {
-  font-size: 14px;
-}
-
-.playlist-songs {
-  margin-top: 40px;
-}
-
-.songs-header {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-.songs-header h3 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: bold;
+  background: rgba(102, 126, 234, 1);
+  transform: scale(1.05);
 }
 
 .songs-list {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 10px;
 }
 
 .song-item {
   display: flex;
   align-items: center;
   gap: 15px;
-  padding: 14px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.song-item:last-child {
-  border-bottom: none;
+  transition: background 0.3s;
 }
 
 .song-item:hover {
-  background: rgba(102, 126, 234, 0.2);
-  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .song-index {
-  flex: 0 0 35px;
+  width: 30px;
   text-align: center;
-  font-weight: bold;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.song-item:hover .song-index {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.song-details {
+.song-info {
   flex: 1;
   min-width: 0;
 }
 
 .song-name {
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: bold;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 4px;
 }
 
 .song-artist {
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
   white-space: nowrap;
   overflow: hidden;
@@ -764,10 +592,8 @@ onBeforeUnmount(() => {
 }
 
 .song-duration {
-  flex: 0 0 50px;
-  text-align: right;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
 }
 
 /* 操作按钮组 */
@@ -893,15 +719,11 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, #4facfe, #00f2fe);
   border: none;
   color: white;
-  padding: 14px 32px;
-  border-radius: 30px;
+  padding: 12px 30px;
+  border-radius: 25px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: bold;
   transition: all 0.3s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   box-shadow: 0 4px 16px rgba(79, 172, 254, 0.4);
 }
 
@@ -913,40 +735,6 @@ onBeforeUnmount(() => {
 .download-all-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.download-icon {
-  font-size: 14px;
-}
-
-.add-all-btn {
-  background: linear-gradient(135deg, #f093fb, #f5576c);
-  border: none;
-  color: white;
-  padding: 14px 32px;
-  border-radius: 30px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.3s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(240, 147, 251, 0.4);
-}
-
-.add-all-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
-}
-
-.add-all-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.add-icon {
-  font-size: 14px;
 }
 
 /* Toast 提示 */
@@ -988,6 +776,28 @@ onBeforeUnmount(() => {
 .toast.warning {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
+}
+
+.add-all-btn {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  border: none;
+  color: white;
+  padding: 12px 30px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 16px rgba(240, 147, 251, 0.4);
+}
+
+.add-all-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
+}
+
+.add-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 右键菜单 */

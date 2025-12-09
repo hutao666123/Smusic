@@ -7,6 +7,7 @@ class AudioPlayer {
     this.playerStore = null
     this.currentSongId = null
     this.isLoading = false
+    this.getPlayMode = null // 播放模式获取函数
     this.setupEventListeners()
   }
 
@@ -28,9 +29,19 @@ class AudioPlayer {
     // 播放结束
     this.audio.addEventListener('ended', () => {
       if (this.playerStore) {
-        console.log('🎵 歌曲播放完成，切换到下一首')
-        this.playerStore.next()
-        this.playCurrentSong()
+        const mode = this.getPlayMode ? this.getPlayMode() : 'order'
+        
+        if (mode === 'loop') {
+          // 循环播放：重新播放当前歌曲
+          console.log('🔁 循环播放当前歌曲')
+          this.audio.currentTime = 0
+          this.audio.play()
+        } else {
+          // 顺序或随机：切换到下一首
+          console.log('🎵 歌曲播放完成，切换到下一首')
+          this.playerStore.next()
+          this.playCurrentSong()
+        }
       }
     })
 
@@ -84,18 +95,34 @@ class AudioPlayer {
     
     try {
       console.log('🎵 正在获取播放 URL:', song.name)
-      const url = await getMusicUrl(songId)
+      
+      // 首先尝试获取本地播放路径
+      const playUrlInfo = await this.playerStore.getSongPlayUrl(song)
       
       // 检查是否已经切换到其他歌曲
       if (!this.isLoading || this.playerStore.currentSong?.id !== loadingId) {
         console.log('⏭️ 歌曲已切换，取消播放')
         return
       }
+
+      let url = playUrlInfo.url
+      const isLocal = playUrlInfo.isLocal
+
+      // 如果没有本地文件，尝试获取在线 URL
+      if (!isLocal) {
+        url = await getMusicUrl(songId)
+        
+        // 再次检查是否已经切换到其他歌曲
+        if (!this.isLoading || this.playerStore.currentSong?.id !== loadingId) {
+          console.log('⏭️ 歌曲已切换，取消播放')
+          return
+        }
+      }
       
       if (!url) {
         console.error('❌ 无法获取播放 URL')
         this.isLoading = false
-        const errorMsg = `无法播放《${song.name}》\n\n可能原因：\n1. 版权限制（该歌曲暂无可用音源）\n2. api-enhanced 服务未启动\n3. 网络连接问题\n\n请确保 api-enhanced 服务已启动（端口 3000）`
+        const errorMsg = `无法播放《${song.name}》\n\n可能原因：\n1. 版权限制（该歌曲暂无可用音源）\n2. api-enhanced 服务未启动\n3. 网络连接问题\n4. 本地文件不存在或已损坏\n\n请确保 api-enhanced 服务已启动（端口 3000）`
         alert(errorMsg)
         
         // 自动跳到下一首
@@ -113,11 +140,12 @@ class AudioPlayer {
         return
       }
 
-      console.log('✅ 播放 URL 获取成功，开始播放:', song.name)
+      console.log(`✅ 播放 URL 获取成功 (${isLocal ? '本地' : '在线'})，开始播放:`, song.name)
       
       // 设置新的音频源
       this.audio.src = url
       this.currentSongId = songId
+      this.playerStore.isLocalPlayback = isLocal
       
       try {
         await this.audio.play()
@@ -138,7 +166,19 @@ class AudioPlayer {
       
       // 只在非中断错误时显示提示
       if (error.name !== 'AbortError') {
-        alert(`播放失败: ${error.message}\n\n请检查后端服务是否正常运行`)
+        const errorMsg = `播放失败: ${error.message}\n\n${
+          this.playerStore.isLocalPlayback 
+            ? '本地文件可能已损坏或被移动，请尝试重新下载' 
+            : '请检查后端服务是否正常运行'
+        }`
+        alert(errorMsg)
+        
+        // 如果是本地播放失败，尝试跳到下一首
+        if (this.playerStore.isLocalPlayback && this.playerStore.playlist.length > 1) {
+          console.log('⏭️ 本地播放失败，自动跳到下一首')
+          this.playerStore.next()
+          setTimeout(() => this.playCurrentSong(), 1000)
+        }
       }
     }
   }

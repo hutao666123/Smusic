@@ -8,6 +8,12 @@ import Discover from '../pages/Discover.vue'
 import Profile from '../pages/Profile.vue'
 import SongDetail from '../pages/SongDetail.vue'
 import Lyrics from '../pages/Lyrics.vue'
+import TopPlaylists from '../pages/TopPlaylists.vue'
+import NewAlbums from '../pages/NewAlbums.vue'
+import Album from '../pages/Album.vue'
+import MyPlaylists from '../pages/MyPlaylists.vue'
+import CollectedPlaylists from '../pages/CollectedPlaylists.vue'
+import LocalPlaylist from '../pages/LocalPlaylist.vue'
 
 const routes = [
   {
@@ -54,6 +60,36 @@ const routes = [
     path: '/lyrics',
     name: 'Lyrics',
     component: Lyrics
+  },
+  {
+    path: '/playlist/top',
+    name: 'TopPlaylists',
+    component: TopPlaylists
+  },
+  {
+    path: '/album/new',
+    name: 'NewAlbums',
+    component: NewAlbums
+  },
+  {
+    path: '/album/:id',
+    name: 'Album',
+    component: Album
+  },
+  {
+    path: '/my-playlists',
+    name: 'MyPlaylists',
+    component: MyPlaylists
+  },
+  {
+    path: '/collected-playlists',
+    name: 'CollectedPlaylists',
+    component: CollectedPlaylists
+  },
+  {
+    path: '/local-playlist/:id',
+    name: 'LocalPlaylist',
+    component: LocalPlaylist
   }
 ]
 
