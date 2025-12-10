@@ -45,7 +45,7 @@
               播放全部
             </button>
             <button
-              v-if="!isSystemPlaylist && !isDownloadsPlaylist"
+              v-if="!isDownloadsPlaylist"
               @click="downloadAll"
               class="download-all-btn"
               :disabled="songs.length === 0"
@@ -70,7 +70,7 @@
 
         <div v-else class="songs-list">
           <div
-            v-for="(song, index) in songs"
+            v-for="(song, index) in displayedSongs"
             :key="song.id"
             class="song-item"
             :class="{ 'is-playing': isCurrentSong(song.id) }"
@@ -143,6 +143,14 @@
               </button>
             </div>
           </div>
+
+          <!-- 加载更多提示 -->
+          <div v-if="hasMoreSongs" class="load-more-container">
+            <div v-if="isLoadingMore" class="loading-more">
+              <div class="loading-spinner"></div>
+              <p>加载中...</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -184,16 +192,28 @@
       @success="handleAddToPlaylistSuccess"
       @cancel="handleAddToPlaylistCancel"
     />
+
+    <!-- 下载进度对话框 -->
+    <DownloadProgressDialog
+      v-model:visible="showDownloadProgress"
+      :total="downloadProgress.total"
+      :completed="downloadProgress.completed"
+      :failed="downloadProgress.failed"
+      :skipped="downloadProgress.skipped"
+      :isDownloading="downloadProgress.isDownloading"
+      @close="handleDownloadProgressClose"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlaylistStore } from '../stores/playlist'
 import { useDownloadStore } from '../stores/download'
 import { usePlayerStore } from '../stores/player'
 import AddToPlaylistDialog from '../components/AddToPlaylistDialog.vue'
+import DownloadProgressDialog from '../components/DownloadProgressDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -208,14 +228,37 @@ const showDeleteDialog = ref(false)
 const deleteTarget = ref(null)
 const showAddToPlaylistDialog = ref(false)
 const selectedSong = ref(null)
+const showDownloadProgress = ref(false)
+const downloadProgress = ref({
+  total: 0,
+  completed: 0,
+  failed: 0,
+  skipped: 0,
+  isDownloading: false
+})
 const toast = ref({
   show: false,
   message: '',
   type: 'success'
 })
 
+// 分页状态
+const PAGE_SIZE = 10
+const currentPage = ref(1)
+const isLoadingMore = ref(false)
+
 // 计算属性
 const songs = computed(() => playlist.value?.songs || [])
+
+// 显示的歌曲列表（分页）
+const displayedSongs = computed(() => {
+  return songs.value.slice(0, currentPage.value * PAGE_SIZE)
+})
+
+// 是否还有更多歌曲
+const hasMoreSongs = computed(() => {
+  return songs.value.length > currentPage.value * PAGE_SIZE
+})
 
 const isSystemPlaylist = computed(() => {
   return playlist.value?.type === 'system'
@@ -246,13 +289,67 @@ const totalSize = computed(() => {
   return songs.value.reduce((sum, song) => sum + (song.fileSize || 0), 0)
 })
 
+// 滚动监听
+const handleScroll = (event) => {
+  if (isLoadingMore.value || !hasMoreSongs.value) return
+  
+  const target = event.target
+  const scrollTop = target.scrollTop
+  const scrollHeight = target.scrollHeight
+  const clientHeight = target.clientHeight
+  
+  // 计算还剩多少内容未显示（距离底部的距离）
+  const distanceToBottom = scrollHeight - (scrollTop + clientHeight)
+  
+  // 估算每首歌的高度约为 70px，当还剩 2-3 首歌的高度时加载
+  const triggerDistance = 200
+  
+  // 距离底部 200px 时开始加载（大约还剩 2-3 首歌的位置）
+  if (distanceToBottom <= triggerDistance) {
+    loadMoreSongs()
+  }
+}
+
+// 加载更多歌曲
+const loadMoreSongs = () => {
+  if (isLoadingMore.value || !hasMoreSongs.value) return
+  
+  isLoadingMore.value = true
+  
+  // 模拟加载延迟
+  setTimeout(() => {
+    currentPage.value++
+    isLoadingMore.value = false
+  }, 300)
+}
+
 // 生命周期
 onMounted(async () => {
   await loadPlaylist()
+  
+  // 查找滚动容器（.app-main）
+  const scrollContainer = document.querySelector('.app-main')
+  if (scrollContainer) {
+    scrollContainer.addEventListener('scroll', handleScroll)
+  } else {
+    window.addEventListener('scroll', handleScroll)
+  }
+})
+
+onUnmounted(() => {
+  // 移除滚动监听
+  const scrollContainer = document.querySelector('.app-main')
+  if (scrollContainer) {
+    scrollContainer.removeEventListener('scroll', handleScroll)
+  } else {
+    window.removeEventListener('scroll', handleScroll)
+  }
 })
 
 // 监听路由变化
 watch(() => route.params.id, async () => {
+  // 重置分页
+  currentPage.value = 1
   await loadPlaylist()
 })
 
@@ -284,6 +381,9 @@ const loadPlaylist = async () => {
 const playAll = () => {
   if (songs.value.length === 0) return
 
+  // 设置播放模式：如果是已下载歌单，强制本地播放
+  playerStore.forceLocalMode = isDownloadsPlaylist.value
+
   playerStore.clearPlaylist()
   songs.value.forEach(song => {
     playerStore.addToPlaylist({
@@ -291,7 +391,8 @@ const playAll = () => {
       name: song.name,
       artist: formatArtists(song.artists),
       duration: song.duration / 1000,
-      localPath: song.localPath // 如果有本地路径，传递给播放器
+      localPath: song.localPath, // 如果有本地路径，传递给播放器
+      cover: song.album?.picUrl || ''
     })
   })
   playerStore.play()
@@ -299,21 +400,26 @@ const playAll = () => {
 }
 
 // 播放单曲
-const playSong = (song, index) => {
-  console.log('playSong - 歌曲对象:', song)
-  console.log('playSong - localPath:', song.localPath)
+const playSong = (song, displayIndex) => {
+
+  // 找到歌曲在完整列表中的真实索引
+  const realIndex = songs.value.findIndex(s => s.id === song.id)
+  
+  // 设置播放模式：如果是已下载歌单，强制本地播放
+  playerStore.forceLocalMode = isDownloadsPlaylist.value
   
   playerStore.clearPlaylist()
   
-  // 从点击的歌曲开始添加
-  for (let i = index; i < songs.value.length; i++) {
+  // 从点击的歌曲开始添加（使用完整列表）
+  for (let i = realIndex; i < songs.value.length; i++) {
     const s = songs.value[i]
     const songToAdd = {
       id: s.id,
       name: s.name,
       artist: formatArtists(s.artists),
       duration: s.duration / 1000,
-      localPath: s.localPath
+      localPath: s.localPath,
+      cover: s.album?.picUrl || ''
     }
     console.log('添加到播放器的歌曲:', songToAdd)
     playerStore.addToPlaylist(songToAdd)
@@ -325,7 +431,7 @@ const playSong = (song, index) => {
 // 下载单曲
 const downloadSong = async (song) => {
   const result = await downloadStore.downloadSong(song)
-  if (result.success) {
+  if (result.success && !result.skipped) {
     showToast('下载完成', 'success')
     // 重新加载歌单数据（无论在哪个页面）
     await playlistStore.loadAllPlaylists()
@@ -333,6 +439,8 @@ const downloadSong = async (song) => {
     if (isDownloadsPlaylist.value) {
       await loadPlaylist()
     }
+  } else if (result.skipped) {
+    showToast('歌曲已下载', 'warning')
   } else {
     showToast(result.error || '下载失败', 'error')
   }
@@ -341,22 +449,59 @@ const downloadSong = async (song) => {
 // 下载全部
 const downloadAll = async () => {
   if (songs.value.length === 0) return
+  if (downloadProgress.value.isDownloading) {
+    showToast('正在下载中，请稍候', 'warning')
+    return
+  }
 
-  showToast(`开始下载 ${songs.value.length} 首歌曲`, 'success')
+  // 重置进度
+  downloadProgress.value = {
+    total: songs.value.length,
+    completed: 0,
+    failed: 0,
+    skipped: 0,
+    isDownloading: true
+  }
   
-  const result = await downloadStore.downloadPlaylist(songs.value)
+  // 显示进度对话框
+  showDownloadProgress.value = true
+  
+  const result = await downloadStore.downloadPlaylist(songs.value, (progress) => {
+    // 更新进度
+    downloadProgress.value.completed = progress.completed || 0
+    downloadProgress.value.failed = progress.failed || 0
+    downloadProgress.value.skipped = progress.skipped || 0
+  })
+  
+  downloadProgress.value.isDownloading = false
   
   if (result.success) {
+    downloadProgress.value.completed = result.completed || 0
+    downloadProgress.value.failed = result.failed || 0
+    downloadProgress.value.skipped = result.skipped || 0
+    
     showToast(
-      `下载完成：成功 ${result.completed} 首，失败 ${result.failed} 首`,
+      `下载完成：成功 ${result.completed} 首，失败 ${result.failed} 首${result.skipped > 0 ? `，跳过 ${result.skipped} 首` : ''}`,
       result.failed > 0 ? 'warning' : 'success'
     )
-    // 如果当前在下载歌单页面，刷新列表
+    
+    // 重新加载歌单数据
+    await playlistStore.loadAllPlaylists()
     if (isDownloadsPlaylist.value) {
       await loadPlaylist()
     }
   } else {
     showToast(result.error || '批量下载失败', 'error')
+  }
+}
+
+// 关闭下载进度对话框
+const handleDownloadProgressClose = async () => {
+  showDownloadProgress.value = false
+  // 重新加载歌单数据
+  await playlistStore.loadAllPlaylists()
+  if (isDownloadsPlaylist.value) {
+    await loadPlaylist()
   }
 }
 
@@ -1095,6 +1240,40 @@ const createFavoriteAnimation = (event) => {
 .toast.warning {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
+}
+
+/* 加载更多容器 */
+.load-more-container {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading-more .loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-more p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
 }
 
 /* 响应式 */

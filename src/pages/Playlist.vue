@@ -37,6 +37,10 @@
               <span class="add-icon">➕</span>
               添加全部到歌单
             </button>
+            <button @click="toggleCollectPlaylist" class="collect-btn" :class="{ collected: isPlaylistCollected }">
+              <span class="collect-icon">{{ isPlaylistCollected ? '❤️' : '🤍' }}</span>
+              {{ isPlaylistCollected ? '已收藏' : '收藏歌单' }}
+            </button>
           </div>
         </div>
       </div>
@@ -47,7 +51,7 @@
         </div>
         <div class="songs-list">
           <div
-            v-for="(song, index) in songs"
+            v-for="(song, index) in displayedSongs"
             :key="song.id"
             class="song-item"
             @click="playSong(song, index)"
@@ -107,6 +111,17 @@
               </span>
             </div>
           </div>
+
+          <!-- 加载更多提示 -->
+          <div v-if="hasMoreSongs" class="load-more-container">
+            <div v-if="isLoadingMore" class="loading-more">
+              <div class="loading-spinner"></div>
+              <p>加载中...</p>
+            </div>
+            <button v-else @click="loadMoreSongs" class="load-more-btn">
+              加载更多 ({{ songs.length }}/{{ totalCount }})
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -152,12 +167,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { usePlaylistStore } from '../stores/playlist'
 import { useDownloadStore } from '../stores/download'
-import { getPlaylistDetail } from '../api/music'
+import { getPlaylistDetail, getPlaylistTracks } from '../api/music'
 import AddToPlaylistDialog from '../components/AddToPlaylistDialog.vue'
 
 const route = useRoute()
@@ -168,6 +183,23 @@ const downloadStore = useDownloadStore()
 const playlist = ref(null)
 const songs = ref([])
 const loading = ref(true)
+
+// 分页状态
+const PAGE_SIZE = 10
+const currentPage = ref(1)
+const isLoadingMore = ref(false)
+const totalCount = ref(0)
+
+// 显示的歌曲列表（分页）
+const displayedSongs = computed(() => {
+  return songs.value
+})
+
+// 是否还有更多歌曲
+const hasMoreSongs = computed(() => {
+  return songs.value.length < totalCount.value
+})
+const isPlaylistCollected = ref(false)
 const toast = ref({
   show: false,
   message: '',
@@ -187,11 +219,115 @@ const showAddDialog = ref(false)
 const selectedSong = ref(null)
 const selectedSongs = ref([])
 
-onMounted(async () => {
+// 加载歌单基本信息
+const loadPlaylistInfo = async () => {
   try {
     const res = await getPlaylistDetail(route.params.id)
     playlist.value = res.data.playlist
-    songs.value = res.data.playlist?.tracks || []
+    totalCount.value = res.data.playlist?.trackCount || 0
+    
+    // 检查是否已收藏
+    if (playlist.value) {
+      isPlaylistCollected.value = playlistStore.isCollected(playlist.value.id)
+    }
+  } catch (error) {
+    console.error('加载歌单信息失败:', error)
+  }
+}
+
+// 加载歌曲列表（分页）
+const loadSongs = async (page = 1) => {
+  if (isLoadingMore.value) return
+  
+  isLoadingMore.value = true
+  try {
+    const offset = (page - 1) * PAGE_SIZE
+    const res = await getPlaylistTracks(route.params.id, PAGE_SIZE, offset)
+    
+    if (res.data.songs) {
+      if (page === 1) {
+        songs.value = res.data.songs
+      } else {
+        songs.value = [...songs.value, ...res.data.songs]
+      }
+    }
+  } catch (error) {
+    console.error('加载歌曲列表失败:', error)
+  } finally {
+    isLoadingMore.value = false
+  }
+}
+
+// 滚动监听
+const handleScroll = (event) => {
+  if (isLoadingMore.value || !hasMoreSongs.value) return
+  
+  const target = event.target
+  const scrollTop = target.scrollTop
+  const scrollHeight = target.scrollHeight
+  const clientHeight = target.clientHeight
+  
+  // 计算还剩多少内容未显示（距离底部的距离）
+  const distanceToBottom = scrollHeight - (scrollTop + clientHeight)
+  
+  // 估算每首歌的高度约为 70px，当还剩 2-3 首歌的高度时加载
+  const triggerDistance = 200
+  
+  // 距离底部 200px 时开始加载（大约还剩 2-3 首歌的位置）
+  if (distanceToBottom <= triggerDistance) {
+    loadMoreSongs()
+  }
+}
+
+// 加载更多歌曲
+const loadMoreSongs = async () => {
+  if (isLoadingMore.value || !hasMoreSongs.value) return
+  currentPage.value++
+  await loadSongs(currentPage.value)
+}
+
+onMounted(async () => {
+  try {
+    // 先加载歌单基本信息
+    await loadPlaylistInfo()
+    // 再加载第一页歌曲
+    await loadSongs(1)
+  } catch (error) {
+    console.error('加载歌单失败:', error)
+  } finally {
+    loading.value = false
+  }
+  
+  // 查找滚动容器（.app-main）
+  const scrollContainer = document.querySelector('.app-main')
+  if (scrollContainer) {
+    scrollContainer.addEventListener('scroll', handleScroll)
+  } else {
+    console.log('未找到滚动容器，使用 window')
+    window.addEventListener('scroll', handleScroll)
+  }
+})
+
+onUnmounted(() => {
+  // 移除滚动监听
+  const scrollContainer = document.querySelector('.app-main')
+  if (scrollContainer) {
+    scrollContainer.removeEventListener('scroll', handleScroll)
+  } else {
+    window.removeEventListener('scroll', handleScroll)
+  }
+})
+
+// 监听路由变化
+watch(() => route.params.id, async () => {
+  // 重置状态
+  currentPage.value = 1
+  songs.value = []
+  loading.value = true
+  
+  try {
+    await loadPlaylistInfo()
+    await loadSongs(1)
   } catch (error) {
     console.error('加载歌单失败:', error)
   } finally {
@@ -199,29 +335,66 @@ onMounted(async () => {
   }
 })
 
-const playAll = () => {
+const playAll = async () => {
+  // 先播放已加载的歌曲
   playerStore.clearPlaylist()
   songs.value.forEach(s => {
     playerStore.addToPlaylist({
       id: s.id,
       name: s.name,
       artist: s.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-      duration: s.dt / 1000
+      duration: s.dt / 1000,
+      cover: s.al?.picUrl || ''
     })
   })
   playerStore.play()
+  
+  // 如果还有未加载的歌曲，在后台继续加载并添加
+  if (hasMoreSongs.value) {
+    showToast(`开始播放，正在后台加载剩余 ${totalCount.value - songs.value.length} 首歌曲...`, 'success')
+    
+    // 计算需要加载的页数
+    const totalPages = Math.ceil(totalCount.value / PAGE_SIZE)
+    
+    // 后台加载所有剩余页面
+    for (let page = currentPage.value + 1; page <= totalPages; page++) {
+      await loadSongs(page)
+      currentPage.value = page
+      
+      // 将新加载的歌曲添加到播放列表
+      const startIndex = (page - 1) * PAGE_SIZE
+      const newSongs = songs.value.slice(startIndex)
+      newSongs.forEach(s => {
+        playerStore.addToPlaylist({
+          id: s.id,
+          name: s.name,
+          artist: s.ar?.map(a => a.name).join(' / ') || '未知艺术家',
+          duration: s.dt / 1000,
+          cover: s.al?.picUrl || ''
+        })
+      })
+    }
+    
+    showToast(`全部 ${songs.value.length} 首歌曲已加载完成`, 'success')
+  } else {
+    showToast(`已添加 ${songs.value.length} 首歌曲到播放列表`, 'success')
+  }
 }
 
-const playSong = (song, index) => {
+const playSong = (song, displayIndex) => {
+  // 找到歌曲在完整列表中的真实索引
+  const realIndex = songs.value.findIndex(s => s.id === song.id)
+  
   playerStore.clearPlaylist()
-  // 从点击的歌曲开始添加
-  for (let i = index; i < songs.value.length; i++) {
+  // 从点击的歌曲开始添加（使用完整列表）
+  for (let i = realIndex; i < songs.value.length; i++) {
     const s = songs.value[i]
     playerStore.addToPlaylist({
       id: s.id,
       name: s.name,
       artist: s.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-      duration: s.dt / 1000
+      duration: s.dt / 1000,
+      cover: s.al?.picUrl || ''
     })
   }
   playerStore.play()
@@ -232,7 +405,8 @@ const addToPlaylist = (song, event) => {
     id: song.id,
     name: song.name,
     artist: song.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-    duration: song.dt / 1000
+    duration: song.dt / 1000,
+    cover: song.al?.picUrl || ''
   })
   
   // 创建飞行音符动画
@@ -512,9 +686,26 @@ const contextMenuDownload = () => {
 }
 
 // 添加全部到歌单
-const addAllToPlaylist = () => {
-  if (songs.value.length === 0) return
+const addAllToPlaylist = async () => {
+  if (totalCount.value === 0) return
   
+  // 如果还有未加载的歌曲，先加载全部
+  if (hasMoreSongs.value) {
+    showToast(`正在加载全部 ${totalCount.value} 首歌曲...`, 'success')
+    
+    // 计算需要加载的页数
+    const totalPages = Math.ceil(totalCount.value / PAGE_SIZE)
+    
+    // 加载所有剩余页面
+    for (let page = currentPage.value + 1; page <= totalPages; page++) {
+      await loadSongs(page)
+      currentPage.value = page
+    }
+    
+    showToast(`已加载全部 ${songs.value.length} 首歌曲`, 'success')
+  }
+  
+  // 将所有歌曲传递给对话框
   selectedSong.value = null
   selectedSongs.value = songs.value.map(song => ({
     id: song.id,
@@ -539,6 +730,39 @@ const handleAddSuccess = (result) => {
 const handleClickOutside = (event) => {
   if (contextMenu.value.show) {
     hideContextMenu()
+  }
+}
+
+// 切换收藏状态
+const toggleCollectPlaylist = async () => {
+  if (!playlist.value) return
+  
+  if (isPlaylistCollected.value) {
+    // 取消收藏
+    const success = await playlistStore.uncollectOnlinePlaylist(playlist.value.id)
+    if (success) {
+      isPlaylistCollected.value = false
+      showToast('已取消收藏', 'success')
+    }
+  } else {
+    // 收藏歌单
+    const playlistData = {
+      id: playlist.value.id,
+      name: playlist.value.name,
+      description: playlist.value.description,
+      coverImgUrl: playlist.value.coverImgUrl,
+      trackCount: playlist.value.trackCount,
+      creator: playlist.value.creator,
+      playCount: playlist.value.playCount,
+      tags: playlist.value.tags,
+      source: 'netease',
+      url: `https://music.163.com/#/playlist?id=${playlist.value.id}`
+    }
+    const success = await playlistStore.collectOnlinePlaylist(playlistData)
+    if (success) {
+      isPlaylistCollected.value = true
+      showToast('已收藏歌单', 'success')
+    }
   }
 }
 
@@ -949,6 +1173,36 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 
+.collect-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  color: white;
+  padding: 14px 32px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+}
+
+.collect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+}
+
+.collect-btn.collected {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.6);
+}
+
+.collect-icon {
+  font-size: 16px;
+}
+
 /* Toast 提示 */
 .toast {
   position: fixed;
@@ -1033,6 +1287,58 @@ onBeforeUnmount(() => {
   font-size: 16px;
   width: 20px;
   text-align: center;
+}
+
+/* 加载更多容器 */
+.load-more-container {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading-more .loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-more p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.load-more-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 25px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.load-more-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 </style>
 

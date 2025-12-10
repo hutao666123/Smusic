@@ -45,16 +45,19 @@ export const usePlaylistStore = defineStore('playlist', () => {
 
       // 加载自定义歌单
       const customResult = await window.electron.getCustomPlaylists()
+      
       if (customResult.success) {
-        const playlists = customResult.data?.data?.playlists || customResult.data?.playlists || []
+        // 现在 customResult.data 直接就是数组
+        const playlists = customResult.data || []
         customPlaylists.value = Array.isArray(playlists) ? playlists : []
       }
 
       // 加载收藏的在线歌单
       const collectedResult = await window.electron.getCollectedPlaylists()
       if (collectedResult.success) {
-        const playlists = collectedResult.data?.data?.playlists || collectedResult.data?.playlists || []
-        collectedPlaylists.value = Array.isArray(playlists) ? playlists : []
+        // collectedResult.data 直接就是数组
+        const playlists = Array.isArray(collectedResult.data) ? collectedResult.data : []
+        collectedPlaylists.value = playlists
       }
 
       // 加载已下载歌单
@@ -84,11 +87,13 @@ export const usePlaylistStore = defineStore('playlist', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await window.electron.addToFavorites(song)
+      const cleanedSong = cleanSong(song)
+      const result = await window.electron.addToFavorites(cleanedSong)
       if (result.success) {
         // result.data 可能是嵌套结构，尝试多种路径
         const songs = result.data?.songs || result.data?.data?.songs || []
-        favorites.value = songs
+        // 清理返回的歌曲数据
+        favorites.value = songs.map(cleanSong)
         showSuccess('已添加到我喜欢的音乐')
         return true
       } else {
@@ -144,6 +149,7 @@ export const usePlaylistStore = defineStore('playlist', () => {
     error.value = null
     try {
       const result = await window.electron.createPlaylist(name, description)
+      
       if (result.success) {
         customPlaylists.value = result.data || []
         showSuccess(`歌单"${name}"创建成功`)
@@ -247,19 +253,38 @@ export const usePlaylistStore = defineStore('playlist', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await window.electron.addSongToPlaylist(playlistId, song)
+      const cleanedSong = cleanSong(song)
+      const result = await window.electron.addSongToPlaylist(playlistId, cleanedSong)
+      
       if (result.success) {
+        // 处理嵌套的数据结构
+        const playlistData = result.data.data || result.data
+        const cleanedReturnSongs = (playlistData.songs || []).map(cleanSong)
+        
         // 更新对应的歌单
         if (playlistId === 'local-favorites') {
-          favorites.value = result.data.songs || []
+          favorites.value = cleanedReturnSongs
         } else {
-          const playlist = customPlaylists.value.find(p => p.id === playlistId)
-          if (playlist) {
-            playlist.songs = result.data.songs || []
-            playlist.updateTime = result.data.updateTime
+          const playlistIndex = customPlaylists.value.findIndex(p => p.id === playlistId)
+          
+          if (playlistIndex !== -1) {
+            // 使用响应式更新，创建新对象
+            customPlaylists.value[playlistIndex] = {
+              ...customPlaylists.value[playlistIndex],
+              songs: cleanedReturnSongs,
+              updateTime: playlistData.updateTime
+            }
+            // 强制触发响应式更新
+            customPlaylists.value = [...customPlaylists.value]
           }
         }
-        showSuccess('已添加到歌单')
+        
+        // 根据返回的消息判断是否已存在
+        if (result.data.message === '歌曲已在歌单中') {
+          showSuccess('歌曲已在歌单中')
+        } else {
+          showSuccess('已添加到歌单')
+        }
         return true
       } else {
         error.value = result.error?.message || '添加歌曲失败'
@@ -312,25 +337,84 @@ export const usePlaylistStore = defineStore('playlist', () => {
     }
   }
 
+  // 清理歌曲对象，只保留可序列化的属性
+  const cleanSong = (song) => {
+    const cleaned = {
+      id: song.id,
+      name: song.name,
+      duration: song.duration || 0
+    }
+    
+    // 处理 artists 数组
+    if (Array.isArray(song.artists)) {
+      cleaned.artists = song.artists.map(a => ({
+        id: a.id,
+        name: a.name
+      }))
+    } else {
+      cleaned.artists = []
+    }
+    
+    // 处理 album 对象
+    if (song.album && typeof song.album === 'object') {
+      cleaned.album = {
+        id: song.album.id || '',
+        name: song.album.name || '',
+        picUrl: song.album.picUrl || ''
+      }
+    } else {
+      cleaned.album = { id: '', name: '', picUrl: '' }
+    }
+    
+    // 处理可选的基本类型字段
+    const optionalFields = ['cover', 'url', 'source', 'addTime', 'downloadTime', 'localPath', 'fileSize', 'quality']
+    for (const key of optionalFields) {
+      if (key in song && (typeof song[key] === 'string' || typeof song[key] === 'number')) {
+        cleaned[key] = song[key]
+      }
+    }
+    
+    return cleaned
+  }
+
   // 批量添加歌曲到歌单
   const addSongsToPlaylist = async (playlistId, songs) => {
     loading.value = true
     error.value = null
     try {
-      const result = await window.electron.addSongsToPlaylist(playlistId, songs)
+      // 清理歌曲数组，只保留可序列化的属性
+      const cleanedSongs = songs.map(cleanSong)
+
+      const result = await window.electron.addSongsToPlaylist(playlistId, cleanedSongs)
+      
       if (result.success) {
+        // 处理嵌套的数据结构：result.data.data 包含实际的返回数据
+        const resultData = result.data.data || result.data
+        
+        // 清理返回的歌曲数据
+        const cleanedReturnSongs = (resultData.playlist?.songs || resultData.songs || []).map(cleanSong)
+        
         // 更新对应的歌单
         if (playlistId === 'local-favorites') {
-          favorites.value = result.data.songs || []
+          favorites.value = cleanedReturnSongs
         } else {
-          const playlist = customPlaylists.value.find(p => p.id === playlistId)
-          if (playlist) {
-            playlist.songs = result.data.songs || []
-            playlist.updateTime = result.data.updateTime
+          const playlistIndex = customPlaylists.value.findIndex(p => p.id === playlistId)
+          if (playlistIndex !== -1) {
+            // 使用响应式更新，创建新对象
+            customPlaylists.value[playlistIndex] = {
+              ...customPlaylists.value[playlistIndex],
+              songs: cleanedReturnSongs,
+              updateTime: resultData.playlist?.updateTime || resultData.updateTime
+            }
+            // 强制触发响应式更新
+            customPlaylists.value = [...customPlaylists.value]
           }
         }
-        const added = result.data.added || 0
-        const skipped = result.data.skipped || 0
+        
+        // 提取 added 和 skipped（使用 addedCount 和 skippedCount）
+        const added = resultData.addedCount || resultData.added || 0
+        const skipped = resultData.skippedCount || resultData.skipped || 0
+        
         showSuccess(`成功添加 ${added} 首歌曲${skipped > 0 ? `，跳过 ${skipped} 首重复歌曲` : ''}`)
         return {
           success: true,
@@ -357,15 +441,20 @@ export const usePlaylistStore = defineStore('playlist', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await window.electron.mergePlaylist(targetId, sourceId, sourceSongs)
+      // 清理源歌曲
+      const cleanedSourceSongs = sourceSongs.map(cleanSong)
+      const result = await window.electron.mergePlaylist(targetId, sourceId, cleanedSourceSongs)
       if (result.success) {
+        // 清理返回的歌曲数据
+        const cleanedReturnSongs = (result.data.songs || []).map(cleanSong)
+        
         // 更新目标歌单
         if (targetId === 'local-favorites') {
-          favorites.value = result.data.songs || []
+          favorites.value = cleanedReturnSongs
         } else {
           const playlist = customPlaylists.value.find(p => p.id === targetId)
           if (playlist) {
-            playlist.songs = result.data.songs || []
+            playlist.songs = cleanedReturnSongs
             playlist.updateTime = result.data.updateTime
           }
         }
@@ -394,9 +483,43 @@ export const usePlaylistStore = defineStore('playlist', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await window.electron.collectOnlinePlaylist(playlist)
+      // 清理歌单对象，只保留可序列化的基本类型字段
+      const cleanedPlaylist = {
+        id: String(playlist.id),
+        name: String(playlist.name || ''),
+        description: String(playlist.description || ''),
+        coverImgUrl: String(playlist.coverImgUrl || playlist.cover || ''),
+        trackCount: Number(playlist.trackCount || 0),
+        playCount: Number(playlist.playCount || 0),
+        source: String(playlist.source || 'netease'),
+        url: String(playlist.url || '')
+      }
+      
+      // 单独处理 creator 对象，只保留基本字段
+      if (playlist.creator && typeof playlist.creator === 'object') {
+        cleanedPlaylist.creator = {
+          nickname: String(playlist.creator.nickname || ''),
+          userId: playlist.creator.userId ? Number(playlist.creator.userId) : 0
+        }
+      } else {
+        cleanedPlaylist.creator = { nickname: '', userId: 0 }
+      }
+      
+      // 单独处理 tags 数组，确保是字符串数组
+      if (Array.isArray(playlist.tags)) {
+        cleanedPlaylist.tags = playlist.tags.map(tag => String(tag)).filter(tag => tag)
+      } else {
+        cleanedPlaylist.tags = []
+      }
+      
+      const result = await window.electron.collectOnlinePlaylist(cleanedPlaylist)
+      console.log('收藏歌单返回:', result)
       if (result.success) {
-        collectedPlaylists.value = result.data || []
+        // 处理嵌套的数据结构：result.data.data 才是真正的数组
+        const playlists = result.data?.data || result.data || []
+        const newPlaylists = Array.isArray(playlists) ? playlists : []
+        console.log('更新收藏列表，数量:', newPlaylists.length)
+        collectedPlaylists.value = newPlaylists
         showSuccess(`已收藏歌单"${playlist.name}"`)
         return true
       } else {
@@ -420,8 +543,13 @@ export const usePlaylistStore = defineStore('playlist', () => {
     error.value = null
     try {
       const result = await window.electron.uncollectOnlinePlaylist(playlistId)
+      console.log('取消收藏返回:', result)
       if (result.success) {
-        collectedPlaylists.value = result.data || []
+        // 处理嵌套的数据结构：result.data.data 才是真正的数组
+        const playlists = result.data?.data || result.data || []
+        const newPlaylists = Array.isArray(playlists) ? playlists : []
+        console.log('更新收藏列表，数量:', newPlaylists.length)
+        collectedPlaylists.value = newPlaylists
         showSuccess('已取消收藏')
         return true
       } else {

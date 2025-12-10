@@ -188,7 +188,8 @@ const playSong = (song) => {
     id: song.id,
     name: song.name,
     artist: song.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-    duration: song.dt / 1000
+    duration: song.dt / 1000,
+    cover: song.al?.picUrl || ''
   })
   playerStore.play()
 }
@@ -198,7 +199,8 @@ const addToPlaylist = (song) => {
     id: song.id,
     name: song.name,
     artist: song.ar?.map(a => a.name).join(' / ') || '未知艺术家',
-    duration: song.dt / 1000
+    duration: song.dt / 1000,
+    cover: song.al?.picUrl || ''
   })
 }
 

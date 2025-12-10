@@ -218,7 +218,7 @@ export const useDownloadStore = defineStore('download', () => {
   }
 
   // 批量下载歌单
-  const downloadPlaylist = async (songs) => {
+  const downloadPlaylist = async (songs, onProgress) => {
     loading.value = true
     error.value = null
     isDownloading.value = true
@@ -233,11 +233,50 @@ export const useDownloadStore = defineStore('download', () => {
         return { success: false, error: '磁盘空间不足' }
       }
 
+      showInfo(`开始批量下载 ${songs.length} 首歌曲`)
+
+      // 为每首歌获取 URL 并准备数据
+      const { getMusicUrl } = await import('../api/music')
+      const songsWithUrl = []
+      
+      for (const song of songs) {
+        try {
+          // 获取播放 URL
+          let songUrl = song.url
+          if (!songUrl) {
+            songUrl = await getMusicUrl(song.id)
+          }
+          
+          if (songUrl) {
+            songsWithUrl.push({
+              id: song.id,
+              name: song.name,
+              artists: song.artists ? JSON.parse(JSON.stringify(song.artists)) : [],
+              album: song.album ? JSON.parse(JSON.stringify(song.album)) : {},
+              duration: song.duration,
+              url: songUrl
+            })
+          } else {
+            console.warn(`无法获取歌曲 ${song.name} 的播放链接`)
+          }
+        } catch (err) {
+          console.error(`获取歌曲 ${song.name} URL 失败:`, err)
+        }
+      }
+
+      if (songsWithUrl.length === 0) {
+        error.value = '无法获取任何歌曲的播放链接'
+        showError(error.value)
+        loading.value = false
+        isDownloading.value = false
+        return { success: false, error: error.value }
+      }
+
       // 添加所有歌曲到队列
-      downloadQueue.value = [...songs]
+      downloadQueue.value = [...songsWithUrl]
 
       // 为每首歌创建任务
-      const tasks = songs.map(song => {
+      const tasks = songsWithUrl.map(song => {
         const taskId = `download-${song.id}-${Date.now()}`
         return {
           id: taskId,
@@ -262,15 +301,43 @@ export const useDownloadStore = defineStore('download', () => {
       })
       downloadTasks.value = new Map(downloadTasks.value)
 
-      showInfo(`开始批量下载 ${songs.length} 首歌曲`)
-
-      // 调用主进程批量下载
-      const result = await window.electron.downloadPlaylist(songs)
+      // 调用主进程批量下载，并监听进度
+      let currentCompleted = 0
+      let currentFailed = 0
+      let currentSkipped = 0
+      
+      // 设置进度监听
+      const progressHandler = (progress) => {
+        if (progress.status === 'completed') {
+          currentCompleted++
+        } else if (progress.status === 'failed') {
+          currentFailed++
+        } else if (progress.status === 'skipped') {
+          currentSkipped++
+        }
+        
+        if (onProgress) {
+          onProgress({
+            completed: currentCompleted,
+            failed: currentFailed,
+            skipped: currentSkipped
+          })
+        }
+      }
+      
+      const result = await window.electron.downloadPlaylist(songsWithUrl)
 
       if (result.success) {
-        const completed = result.data?.completed || 0
-        const failed = result.data?.failed || 0
-        const skipped = result.data?.skipped || 0
+        // 注意：result.data.data 才是实际的结果对象
+        const resultData = result.data?.data || result.data || {}
+        const completed = resultData.success || 0
+        const failed = resultData.failed || 0
+        const skipped = resultData.skipped || 0
+        
+        // 最终更新进度
+        if (onProgress) {
+          onProgress({ completed, failed, skipped })
+        }
         
         showNotification({
           type: completed > 0 ? 'success' : 'warning',

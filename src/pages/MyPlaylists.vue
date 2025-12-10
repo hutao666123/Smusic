@@ -31,7 +31,7 @@
               </div>
             </div>
             <div class="playlist-info">
-              <h3 class="playlist-title">我喜欢的音乐</h3>
+              <h3 class="playlist-title">喜欢</h3>
               <p class="playlist-meta">{{ favorites.length }} 首歌曲</p>
             </div>
           </div>
@@ -112,6 +112,54 @@
           </div>
         </div>
       </section>
+
+      <!-- 收藏的歌单 -->
+      <section v-if="collectedPlaylists.length > 0" class="playlists-section">
+        <h2 class="section-title">收藏</h2>
+        <div class="playlists-grid">
+          <div
+            v-for="playlist in collectedPlaylists"
+            :key="playlist.id"
+            class="playlist-card collected-card"
+            @click="goToOnlinePlaylist(playlist)"
+          >
+            <div class="playlist-cover collected-cover">
+              <img
+                v-if="playlist.coverImgUrl"
+                :src="playlist.coverImgUrl"
+                :alt="playlist.name"
+              />
+              <div v-else class="cover-placeholder">
+                <div class="placeholder-icon">🎵</div>
+              </div>
+              <div class="cover-overlay">
+                <div class="play-icon">▶</div>
+              </div>
+              <div class="playlist-actions">
+                <button
+                  class="action-btn collect-btn collected"
+                  @click.stop="toggleCollectPlaylist(playlist)"
+                  title="取消收藏"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="playlist-info">
+              <h3 class="playlist-title">{{ playlist.name }}</h3>
+              <p class="playlist-meta">{{ playlist.source }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 加载更多提示 -->
+      <div v-if="isLoadingMore" class="loading-more">
+        <div class="loading-spinner"></div>
+        <p>加载中...</p>
+      </div>
     </div>
 
     <!-- 创建/编辑歌单对话框 -->
@@ -127,14 +175,15 @@
         </div>
         <div class="dialog-body">
           <div class="form-group">
-            <label>歌单名称</label>
+            <label>歌单名称 (最多15字)</label>
             <input
               v-model="formData.name"
               type="text"
               placeholder="请输入歌单名称"
-              maxlength="50"
+              maxlength="15"
               @keyup.enter="submitForm"
             />
+            <div class="char-count">{{ formData.name.length }}/15</div>
           </div>
           <div class="form-group">
             <label>描述（可选）</label>
@@ -184,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlaylistStore } from '../stores/playlist'
 
@@ -208,15 +257,91 @@ const toast = ref({
   type: 'success'
 })
 
+// 分页状态
+const PAGE_SIZE = 10
+const customPlaylistsPage = ref(1)
+const collectedPlaylistsPage = ref(1)
+const isLoadingMore = ref(false)
+
 // 计算属性
 const favorites = computed(() => playlistStore.favorites)
 const downloads = computed(() => playlistStore.downloads)
-const customPlaylists = computed(() => playlistStore.customPlaylists)
+
+// 分页后的自定义歌单
+const customPlaylists = computed(() => {
+  const all = playlistStore.customPlaylists || []
+  return all.slice(0, customPlaylistsPage.value * PAGE_SIZE)
+})
+
+const hasMoreCustomPlaylists = computed(() => {
+  const all = playlistStore.customPlaylists || []
+  return all.length > customPlaylistsPage.value * PAGE_SIZE
+})
+
+// 分页后的收藏歌单
+const collectedPlaylists = computed(() => {
+  const all = playlistStore.collectedPlaylists || []
+  return all.slice(0, collectedPlaylistsPage.value * PAGE_SIZE)
+})
+
+const hasMoreCollectedPlaylists = computed(() => {
+  const all = playlistStore.collectedPlaylists || []
+  return all.length > collectedPlaylistsPage.value * PAGE_SIZE
+})
+
+// 滚动监听
+const handleScroll = () => {
+  if (isLoadingMore.value) return
+  
+  const scrollTop = window.scrollY || document.documentElement.scrollTop
+  const windowHeight = window.innerHeight
+  const documentHeight = document.documentElement.scrollHeight
+  
+  // 距离底部 300px 时开始加载
+  if (scrollTop + windowHeight >= documentHeight - 300) {
+    loadMore()
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  if (isLoadingMore.value) return
+  
+  let hasMore = false
+  
+  // 检查是否有更多自定义歌单
+  if (hasMoreCustomPlaylists.value) {
+    customPlaylistsPage.value++
+    hasMore = true
+  }
+  
+  // 检查是否有更多收藏歌单
+  if (hasMoreCollectedPlaylists.value) {
+    collectedPlaylistsPage.value++
+    hasMore = true
+  }
+  
+  if (hasMore) {
+    isLoadingMore.value = true
+    // 模拟加载延迟
+    setTimeout(() => {
+      isLoadingMore.value = false
+    }, 300)
+  }
+}
 
 // 生命周期
 onMounted(async () => {
-  await playlistStore.loadAllPlaylists()
+  // 数据已由 AppContentWrapper 加载，这里只需要关闭 loading
   loading.value = false
+  
+  // 添加滚动监听
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  // 移除滚动监听
+  window.removeEventListener('scroll', handleScroll)
 })
 
 // 跳转到歌单详情
@@ -244,13 +369,25 @@ const confirmDelete = (playlist) => {
 const handleDelete = async () => {
   if (!deleteTarget.value) return
 
-  const success = await playlistStore.deletePlaylist(deleteTarget.value.id)
-  if (success) {
-    showToast('歌单已删除', 'success')
-    showDeleteDialog.value = false
-    deleteTarget.value = null
-  } else {
-    showToast(playlistStore.error || '删除失败', 'error')
+  loading.value = true
+  try {
+    const result = await window.electron.deletePlaylist(deleteTarget.value.id)
+    
+    if (result.success) {
+      // 重新加载所有歌单数据
+      await playlistStore.loadAllPlaylists()
+      
+      showToast('歌单已删除', 'success')
+      showDeleteDialog.value = false
+      deleteTarget.value = null
+    } else {
+      showToast(result.error?.message || '删除失败', 'error')
+    }
+  } catch (error) {
+    console.error('删除歌单失败:', error)
+    showToast('删除失败', 'error')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -261,30 +398,42 @@ const submitForm = async () => {
     return
   }
 
-  if (showEditDialog.value) {
-    // 编辑歌单
-    const success = await playlistStore.updatePlaylist(editTarget.value.id, {
-      name: formData.value.name.trim(),
-      description: formData.value.description.trim()
-    })
-    if (success) {
-      showToast('歌单已更新', 'success')
-      closeDialogs()
+  loading.value = true
+  try {
+    if (showEditDialog.value) {
+      // 编辑歌单
+      const result = await window.electron.updatePlaylist(editTarget.value.id, {
+        name: formData.value.name.trim(),
+        description: formData.value.description.trim()
+      })
+      if (result.success) {
+        // 重新加载所有歌单数据
+        await playlistStore.loadAllPlaylists()
+        showToast('歌单已更新', 'success')
+        closeDialogs()
+      } else {
+        showToast(result.error?.message || '更新失败', 'error')
+      }
     } else {
-      showToast(playlistStore.error || '更新失败', 'error')
+      // 创建歌单
+      const result = await window.electron.createPlaylist(
+        formData.value.name.trim(),
+        formData.value.description.trim()
+      )
+      if (result.success) {
+        // 重新加载所有歌单数据
+        await playlistStore.loadAllPlaylists()
+        showToast('歌单已创建', 'success')
+        closeDialogs()
+      } else {
+        showToast(result.error?.message || '创建失败', 'error')
+      }
     }
-  } else {
-    // 创建歌单
-    const newPlaylist = await playlistStore.createPlaylist(
-      formData.value.name.trim(),
-      formData.value.description.trim()
-    )
-    if (newPlaylist) {
-      showToast('歌单已创建', 'success')
-      closeDialogs()
-    } else {
-      showToast(playlistStore.error || '创建失败', 'error')
-    }
+  } catch (error) {
+    console.error('操作失败:', error)
+    showToast('操作失败', 'error')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -305,6 +454,36 @@ const showToast = (message, type = 'success') => {
   setTimeout(() => {
     toast.value.show = false
   }, 3000)
+}
+
+// 检查歌单是否已收藏
+const isPlaylistCollected = (playlistId) => {
+  return playlistStore.isCollected(playlistId)
+}
+
+// 切换收藏状态
+const toggleCollectPlaylist = async (playlist) => {
+  const isCollected = isPlaylistCollected(playlist.id)
+  
+  if (isCollected) {
+    // 取消收藏
+    const success = await playlistStore.uncollectOnlinePlaylist(playlist.id)
+    if (success) {
+      showToast('已取消收藏', 'success')
+    }
+  } else {
+    // 收藏歌单
+    const success = await playlistStore.collectOnlinePlaylist(playlist)
+    if (success) {
+      showToast('已收藏歌单', 'success')
+    }
+  }
+}
+
+// 跳转到在线歌单详情
+const goToOnlinePlaylist = (playlist) => {
+  // 跳转到在线歌单详情页面
+  router.push(`/playlist/${playlist.id}`)
 }
 </script>
 
@@ -460,6 +639,20 @@ const showToast = (message, type = 'success') => {
   object-fit: cover;
 }
 
+/* 收藏歌单封面 */
+.collected-cover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.collected-cover img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cover-placeholder {
   position: absolute;
   top: 0;
@@ -548,6 +741,21 @@ const showToast = (message, type = 'success') => {
 
 .delete-btn:hover {
   background: rgba(239, 68, 68, 0.9);
+}
+
+.collect-btn {
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.collect-btn:hover {
+  background: rgba(251, 191, 36, 0.9);
+  color: white;
+}
+
+.collect-btn.collected {
+  background: rgba(251, 191, 36, 0.9);
+  color: white;
 }
 
 .action-btn svg {
@@ -726,6 +934,13 @@ const showToast = (message, type = 'success') => {
   min-height: 80px;
 }
 
+.char-count {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: right;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -829,6 +1044,31 @@ const showToast = (message, type = 'success') => {
 .toast.error {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
+}
+
+/* 加载更多提示 */
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 15px;
+}
+
+.loading-more .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-more p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
 }
 
 /* 响应式 */

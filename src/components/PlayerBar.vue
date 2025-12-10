@@ -9,8 +9,12 @@
           <span>🎵</span>
         </div>
         <div class="song-text" @click="goToSongDetail">
-          <div class="song-name">{{ currentSong.name }}</div>
-          <div class="song-artist">{{ currentSong.artist }}</div>
+          <div class="song-name" ref="songNameRef">
+            <span class="song-name-text">{{ currentSong.name }}</span>
+          </div>
+          <div class="song-artist" ref="songArtistRef">
+            <span class="song-artist-text">{{ currentSong.artist }}</span>
+          </div>
         </div>
       </div>
       <div v-else class="song-info">
@@ -68,6 +72,14 @@
       >
         {{ isFavorited ? '❤️' : '🤍' }}
       </button>
+      <button 
+        v-if="currentSong"
+        @click.stop="showAddToPlaylistDialog($event)" 
+        class="extra-btn add-playlist-btn" 
+        title="加入歌单"
+      >
+        ➕
+      </button>
       <button @click="goToLyrics" class="extra-btn lyrics-btn" title="歌词">
         📝
       </button>
@@ -75,6 +87,15 @@
         ⋯
       </button>
     </div>
+
+    <!-- 加入歌单对话框 -->
+    <AddToPlaylistDialog
+      :visible="showAddDialog"
+      :song="songToAdd"
+      @update:visible="showAddDialog = $event"
+      @success="handleAddDialogClose"
+      @cancel="handleAddDialogClose"
+    />
 
     <!-- 播放列表弹窗 -->
     <div v-if="showPlaylist" class="playlist-modal" @click.self="closePlaylist">
@@ -154,6 +175,7 @@ import { usePlayerStore } from '../stores/player'
 import { usePlaylistStore } from '../stores/playlist'
 import { getSongDetail } from '../api/music'
 import audioPlayer from '../services/audioPlayer'
+import AddToPlaylistDialog from './AddToPlaylistDialog.vue'
 
 const router = useRouter()
 const playerStore = usePlayerStore()
@@ -165,6 +187,10 @@ const playlistContent = ref(null)
 const activeActionIndex = ref(null)
 const draggedIndex = ref(null)
 const playMode = ref('order') // 'order' | 'random' | 'loop'
+const showAddDialog = ref(false)
+const songToAdd = ref(null)
+const songNameRef = ref(null)
+const songArtistRef = ref(null)
 
 const currentSong = computed(() => playerStore.currentSong)
 const isPlaying = computed(() => playerStore.isPlaying)
@@ -206,7 +232,77 @@ onMounted(() => {
   audioPlayer.setVolume(playerStore.volume)
   // 设置播放模式获取函数
   audioPlayer.getPlayMode = () => playMode.value
+  
+  // 检查文本溢出
+  checkTextOverflow()
+  
+  // 恢复播放状态：如果有播放列表和当前歌曲
+  if (playerStore.playlist.length > 0 && playerStore.currentSong) {
+    const savedTime = playerStore.currentTime
+    const wasPlaying = playerStore.isPlaying
+    const currentSongData = playerStore.currentSong
+    
+    // 恢复封面
+    if (currentSongData.cover) {
+      songCover.value = currentSongData.cover
+    } else if (currentSongData.id) {
+      // 如果没有封面，异步获取
+      getSongDetail(currentSongData.id).then(res => {
+        if (res.data.songs && res.data.songs[0]) {
+          const song = res.data.songs[0]
+          if (song.al && song.al.picUrl) {
+            songCover.value = song.al.picUrl
+            currentSongData.cover = song.al.picUrl
+          }
+        }
+      }).catch(err => {
+        console.error('获取封面失败:', err)
+      })
+    }
+    
+    // 先设置为不播放，加载完成后再决定
+    playerStore.isPlaying = false
+    
+    // 预加载当前歌曲
+    audioPlayer.playCurrentSong().then(() => {
+      // 恢复播放进度
+      if (savedTime > 0) {
+        audioPlayer.setCurrentTime(savedTime)
+      }
+      
+      // 如果刷新前正在播放，则自动继续播放
+      if (wasPlaying) {
+        audioPlayer.audio.play()
+        playerStore.isPlaying = true
+      }
+    })
+  }
 })
+
+// 检查文本是否溢出
+const checkTextOverflow = () => {
+  nextTick(() => {
+    if (songNameRef.value) {
+      const container = songNameRef.value
+      const text = container.querySelector('.song-name-text')
+      if (text && text.scrollWidth > container.clientWidth) {
+        container.classList.add('overflow')
+      } else {
+        container.classList.remove('overflow')
+      }
+    }
+    
+    if (songArtistRef.value) {
+      const container = songArtistRef.value
+      const text = container.querySelector('.song-artist-text')
+      if (text && text.scrollWidth > container.clientWidth) {
+        container.classList.add('overflow')
+      } else {
+        container.classList.remove('overflow')
+      }
+    }
+  })
+}
 
 // 监听播放状态变化（仅控制暂停/继续，不触发新歌曲加载）
 watch(isPlaying, (newVal) => {
@@ -225,6 +321,12 @@ watch(currentSong, async (newSong, oldSong) => {
   // 只有在歌曲真正改变时才触发播放
   if (newSong && newSong.id && newSong.id !== oldSong?.id) {
     audioPlayer.playCurrentSong()
+    
+    // 检查文本溢出
+    checkTextOverflow()
+    
+    // 立即更新封面（如果有的话），避免显示上一首歌的封面
+    songCover.value = newSong.cover || ''
     
     // 获取歌曲详情以获取图片
     if (!fetchedCovers.has(newSong.id)) {
@@ -245,7 +347,7 @@ watch(currentSong, async (newSong, oldSong) => {
         console.error('获取歌曲详情失败:', error)
       }
     } else if (newSong.cover) {
-      // 如果已经有封面，直接使用
+      // 如果已经请求过且有封面，直接使用
       songCover.value = newSong.cover
     }
   }
@@ -561,13 +663,44 @@ const createFavoriteAnimation = () => {
     }, 800 + i * 50)
   }
 }
+
+// 显示加入歌单对话框
+const showAddToPlaylistDialog = (event) => {
+  if (!currentSong.value) return
+  
+  // 阻止事件冒泡
+  if (event) {
+    event.stopPropagation()
+  }
+  
+  console.log('点击加入歌单按钮', currentSong.value)
+  
+  songToAdd.value = {
+    id: currentSong.value.id,
+    name: currentSong.value.name,
+    artists: currentSong.value.artist ? [{ name: currentSong.value.artist }] : [],
+    album: {
+      name: currentSong.value.album || '',
+      picUrl: currentSong.value.cover || songCover.value || ''
+    },
+    duration: Math.round((currentSong.value.duration || 0) * 1000)
+  }
+  
+  showAddDialog.value = true
+  console.log('showAddDialog 设置为 true', showAddDialog.value)
+}
+
+const handleAddDialogClose = () => {
+  showAddDialog.value = false
+  songToAdd.value = null
+}
 </script>
 
 <style scoped>
 .player-bar {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   color: white;
   background: rgba(0, 0, 0, 0.7);
   padding: 15px 20px;
@@ -575,11 +708,13 @@ const createFavoriteAnimation = () => {
 }
 
 .player-info {
-  flex: 0 0 auto;
-  min-width: 0;
+  flex: 0 0 200px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .song-info {
@@ -627,27 +762,75 @@ const createFavoriteAnimation = () => {
   flex: 1;
   min-width: 0;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .song-name {
   font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-size: 14px;
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.song-name-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* 只有溢出时才显示渐变遮罩和滚动 */
+.song-name.overflow {
+  mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}
+
+.song-name.overflow .song-name-text {
+  padding-right: 30px;
+}
+
+.song-name.overflow:hover .song-name-text {
+  animation: scroll-text 15s linear infinite;
+}
+
+@keyframes scroll-text {
+  0%, 10% {
+    transform: translateX(0);
+  }
+  90%, 100% {
+    transform: translateX(calc(-100% + 170px));
+  }
 }
 
 .song-artist {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  width: 100%;
+  position: relative;
+}
+
+.song-artist-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.song-artist.overflow {
+  mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}
+
+.song-artist.overflow .song-artist-text {
+  padding-right: 30px;
+}
+
+.song-artist.overflow:hover .song-artist-text {
+  animation: scroll-text 15s linear infinite;
 }
 
 .player-controls {
+  flex: 0 0 auto;
   display: flex;
-  gap: 10px;
+  gap: 6px;
 }
 
 .control-btn {
@@ -686,6 +869,7 @@ const createFavoriteAnimation = () => {
 
 .player-progress {
   flex: 1;
+  min-width: 200px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -728,6 +912,7 @@ const createFavoriteAnimation = () => {
   align-items: center;
   gap: 8px;
   flex: 0 0 120px;
+  min-width: 120px;
 }
 
 .volume-input {
@@ -736,8 +921,9 @@ const createFavoriteAnimation = () => {
 }
 
 .player-extras {
+  flex: 0 0 auto;
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .extra-btn {
@@ -768,6 +954,16 @@ const createFavoriteAnimation = () => {
 }
 
 .favorite-btn:hover {
+  transform: scale(1.15);
+}
+
+.add-playlist-btn {
+  font-size: 18px;
+  background: rgba(102, 234, 126, 0.6);
+}
+
+.add-playlist-btn:hover {
+  background: rgba(102, 234, 126, 0.8);
   transform: scale(1.15);
 }
 

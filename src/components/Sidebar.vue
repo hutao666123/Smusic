@@ -21,14 +21,17 @@
 
       <!-- 我的音乐分组 -->
       <div class="menu-section">
-        <h3 class="section-title">我的音乐</h3>
+        <div class="section-header-with-action">
+          <h3 class="section-title">我的音乐</h3>
+          <router-link to="/my-playlists" class="more-link">更多</router-link>
+        </div>
         <router-link 
           to="/local-playlist/local-favorites" 
           class="menu-item" 
           :class="{ active: isActive('/local-playlist/local-favorites') }"
         >
           <span class="icon">❤️</span>
-          <span class="label">我喜欢的音乐</span>
+          <span class="label">喜欢</span>
           <span v-if="playlistStore.favorites.length > 0" class="count">{{ playlistStore.favorites.length }}</span>
         </router-link>
         <router-link 
@@ -46,8 +49,8 @@
           :class="{ active: isActive('/collected-playlists') }"
         >
           <span class="icon">📚</span>
-          <span class="label">收藏的歌单</span>
-          <span v-if="playlistStore.collectedPlaylists.length > 0" class="count">{{ playlistStore.collectedPlaylists.length }}</span>
+          <span class="label">收藏</span>
+          <span v-if="collectedCount > 0" class="count">{{ collectedCount }}</span>
         </router-link>
       </div>
 
@@ -65,7 +68,7 @@
             <p>暂无自定义歌单</p>
           </div>
           <router-link
-            v-for="playlist in playlistStore.customPlaylists"
+            v-for="playlist in customPlaylistsWithCount"
             :key="playlist.id"
             :to="`/local-playlist/${playlist.id}`"
             class="playlist-item"
@@ -74,7 +77,7 @@
           >
             <span class="playlist-icon">📋</span>
             <span class="playlist-name">{{ playlist.name }}</span>
-            <span v-if="playlist.songs && playlist.songs.length > 0" class="count">{{ playlist.songs.length }}</span>
+            <span v-if="playlist.songCount > 0" class="count">{{ playlist.songCount }}</span>
           </router-link>
         </div>
       </div>
@@ -96,23 +99,41 @@
         <span class="label">诊断</span>
       </router-link>
     </div>
+
+    <!-- 创建歌单对话框 -->
+    <CreatePlaylistDialog
+      v-model:visible="showCreateDialog"
+      @success="handlePlaylistCreated"
+    />
   </aside>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlaylistStore } from '../stores/playlist'
+import CreatePlaylistDialog from './CreatePlaylistDialog.vue'
 
 const route = useRoute()
 const playlistStore = usePlaylistStore()
 
 const showCustomPlaylists = ref(true)
+const showCreateDialog = ref(false)
 
-onMounted(async () => {
-  // 加载所有本地歌单数据
-  await playlistStore.loadAllPlaylists()
+// 使用 computed 确保响应式
+const collectedCount = computed(() => playlistStore.collectedPlaylists.length)
+
+// 监听自定义歌单变化，强制刷新
+const customPlaylistsWithCount = computed(() => {
+  return playlistStore.customPlaylists.map(playlist => ({
+    ...playlist,
+    songCount: playlist.songs?.length || 0
+  }))
 })
+
+// Sidebar 不需要主动加载数据，由 AppContentWrapper 统一加载
+
+// 不需要在路由变化时重新加载，数据会在需要时自动更新
 
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')
@@ -123,15 +144,18 @@ const toggleCustomPlaylists = () => {
 }
 
 const showCreatePlaylist = () => {
-  // TODO: 显示创建歌单对话框
-  // 这将在后续任务中实现
-  console.log('创建歌单')
+  showCreateDialog.value = true
+}
+
+const handlePlaylistCreated = (newPlaylist) => {
+  // 歌单创建成功后，确保列表展开
+  showCustomPlaylists.value = true
 }
 </script>
 
 <style scoped>
 .sidebar {
-  width: 240px;
+  width: 180px;
   background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
   color: white;
   display: flex;
@@ -162,18 +186,18 @@ const showCreatePlaylist = () => {
 
 /* 头部 */
 .sidebar-header {
-  padding: 16px;
+  padding: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: bold;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -200,6 +224,14 @@ const showCreatePlaylist = () => {
   margin-bottom: 8px;
 }
 
+.section-header-with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  margin-bottom: 8px;
+}
+
 .section-title {
   font-size: 12px;
   font-weight: 600;
@@ -210,12 +242,26 @@ const showCreatePlaylist = () => {
   letter-spacing: 0.5px;
 }
 
+.more-link {
+  font-size: 12px;
+  color: rgba(102, 126, 234, 0.8);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.more-link:hover {
+  color: rgba(102, 126, 234, 1);
+  background: rgba(102, 126, 234, 0.1);
+}
+
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  margin: 4px 0;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 2px 0;
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
@@ -224,6 +270,7 @@ const showCreatePlaylist = () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13px;
 }
 
 .menu-item:hover {
@@ -238,8 +285,8 @@ const showCreatePlaylist = () => {
 }
 
 .icon {
-  flex: 0 0 20px;
-  font-size: 16px;
+  flex: 0 0 18px;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -247,6 +294,8 @@ const showCreatePlaylist = () => {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* 歌曲数量标签 */
@@ -318,14 +367,14 @@ const showCreatePlaylist = () => {
 .playlist-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   margin: 2px 0;
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all 0.3s;
-  font-size: 13px;
+  font-size: 12px;
   overflow: hidden;
   text-decoration: none;
 }
@@ -342,8 +391,8 @@ const showCreatePlaylist = () => {
 }
 
 .playlist-icon {
-  flex: 0 0 16px;
-  font-size: 14px;
+  flex: 0 0 14px;
+  font-size: 12px;
 }
 
 .playlist-name {

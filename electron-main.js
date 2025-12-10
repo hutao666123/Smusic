@@ -171,12 +171,9 @@ async function initializeManagers() {
 // 初始化默认数据文件
 async function initializeDefaultData() {
   try {
-    console.log('检查并初始化数据文件...')
-    
     // 检查并创建 favorites.json
     const favoritesExists = await fileManager.fileExists('favorites.json')
     if (!favoritesExists.data) {
-      console.log('创建默认的 favorites.json')
       const defaultFavorites = {
         version: '1.0',
         id: 'local-favorites',
@@ -191,7 +188,6 @@ async function initializeDefaultData() {
     // 检查并创建 downloads.json
     const downloadsExists = await fileManager.fileExists('downloads.json')
     if (!downloadsExists.data) {
-      console.log('创建默认的 downloads.json')
       const defaultDownloads = {
         version: '1.0',
         id: 'local-downloads',
@@ -206,7 +202,6 @@ async function initializeDefaultData() {
     // 检查并创建 custom-playlists.json
     const customPlaylistsExists = await fileManager.fileExists('custom-playlists.json')
     if (!customPlaylistsExists.data) {
-      console.log('创建默认的 custom-playlists.json')
       const defaultCustomPlaylists = {
         version: '1.0',
         playlists: []
@@ -217,17 +212,14 @@ async function initializeDefaultData() {
     // 检查并创建 collected-playlists.json
     const collectedPlaylistsExists = await fileManager.fileExists('collected-playlists.json')
     if (!collectedPlaylistsExists.data) {
-      console.log('创建默认的 collected-playlists.json')
       const defaultCollectedPlaylists = {
         version: '1.0',
         playlists: []
       }
       await fileManager.writeJSON('collected-playlists.json', defaultCollectedPlaylists)
     }
-    
-    console.log('数据文件初始化完成')
   } catch (error) {
-    console.error('初始化默认数据文件失败:', error)
+    // 初始化失败
   }
 }
 
@@ -264,7 +256,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.addToFavorites(song)
       return createResponse(true, result)
     } catch (error) {
-      console.error('添加到喜欢失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -276,7 +267,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.removeFromFavorites(songId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('从喜欢移除失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -284,9 +274,8 @@ function registerIpcHandlers() {
   ipcMain.handle('get-favorites', async () => {
     try {
       const result = await playlistManager.getFavorites()
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('获取喜欢列表失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -298,7 +287,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.isFavorite(songId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('检查喜欢状态失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -309,9 +297,8 @@ function registerIpcHandlers() {
       validateParams({ name }, ['name'])
       
       const result = await playlistManager.createPlaylist(name, description)
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('创建歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -321,9 +308,8 @@ function registerIpcHandlers() {
       validateParams({ playlistId }, ['playlistId'])
       
       const result = await playlistManager.updatePlaylist(playlistId, data)
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('更新歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -333,9 +319,8 @@ function registerIpcHandlers() {
       validateParams({ playlistId }, ['playlistId'])
       
       const result = await playlistManager.deletePlaylist(playlistId)
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('删除歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -343,9 +328,8 @@ function registerIpcHandlers() {
   ipcMain.handle('get-custom-playlists', async () => {
     try {
       const result = await playlistManager.getCustomPlaylists()
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('获取自定义歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -359,7 +343,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.addSongToPlaylist(playlistId, song)
       return createResponse(true, result)
     } catch (error) {
-      console.error('添加歌曲到歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -371,7 +354,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.removeSongFromPlaylist(playlistId, songId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('从歌单移除歌曲失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -387,7 +369,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.addSongsToPlaylist(playlistId, songs)
       return createResponse(true, result)
     } catch (error) {
-      console.error('批量添加歌曲失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -400,7 +381,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.mergePlaylist(targetId, sourceId, sourceSongs)
       return createResponse(true, result)
     } catch (error) {
-      console.error('合并歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -412,9 +392,8 @@ function registerIpcHandlers() {
       validateParams(playlist, ['id', 'name'])
       
       const result = await playlistManager.collectOnlinePlaylist(playlist)
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('收藏在线歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -424,9 +403,8 @@ function registerIpcHandlers() {
       validateParams({ playlistId }, ['playlistId'])
       
       const result = await playlistManager.uncollectOnlinePlaylist(playlistId)
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('取消收藏在线歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -434,9 +412,8 @@ function registerIpcHandlers() {
   ipcMain.handle('get-collected-playlists', async () => {
     try {
       const result = await playlistManager.getCollectedPlaylists()
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('获取收藏的歌单失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -445,9 +422,8 @@ function registerIpcHandlers() {
   ipcMain.handle('get-downloads', async () => {
     try {
       const result = await playlistManager.getDownloads()
-      return createResponse(true, result)
+      return result  // playlistManager 已经返回标准格式，直接返回
     } catch (error) {
-      console.error('获取已下载列表失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -459,7 +435,6 @@ function registerIpcHandlers() {
       const result = await playlistManager.removeFromDownloads(songId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('从已下载移除失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -468,20 +443,16 @@ function registerIpcHandlers() {
   ipcMain.handle('download-song', async (event, params) => {
     try {
       const { songId, songUrl, metadata } = params
-      console.log('=== IPC download-song 收到请求 ===')
-      console.log('参数:', { songId, songUrl, metadata })
       
       validateParams({ songId, songUrl, metadata }, ['songId', 'songUrl', 'metadata'])
       
       const result = await downloadManager.downloadSong(songId, songUrl, metadata)
-      console.log('下载管理器返回:', result)
       
       // 注意：不要在这里重复调用 addToDownloads
       // DownloadManager 的 _executeDownload 方法已经在下载完成后调用了
       
       return createResponse(true, result)
     } catch (error) {
-      console.error('下载歌曲失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -503,7 +474,6 @@ function registerIpcHandlers() {
       
       return createResponse(true, result)
     } catch (error) {
-      console.error('批量下载失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -515,7 +485,6 @@ function registerIpcHandlers() {
       const result = await downloadManager.cancelDownload(taskId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('取消下载失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -527,7 +496,6 @@ function registerIpcHandlers() {
       const result = await downloadManager.pauseDownload(taskId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('暂停下载失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -539,7 +507,6 @@ function registerIpcHandlers() {
       const result = await downloadManager.resumeDownload(taskId)
       return createResponse(true, result)
     } catch (error) {
-      console.error('恢复下载失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -557,7 +524,6 @@ function registerIpcHandlers() {
       
       return createResponse(true, result.data)
     } catch (error) {
-      console.error('获取本地歌曲路径失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -567,8 +533,6 @@ function registerIpcHandlers() {
     try {
       validateParams({ filePath }, ['filePath'])
       
-      console.log('读取本地音频文件:', filePath)
-      
       // 检查文件是否存在
       if (!fs.existsSync(filePath)) {
         return createResponse(false, null, { message: '文件不存在' })
@@ -577,15 +541,12 @@ function registerIpcHandlers() {
       // 读取文件为 Buffer
       const buffer = fs.readFileSync(filePath)
       
-      console.log('文件读取成功，大小:', buffer.length, '字节')
-      
       // 返回 Buffer（会自动转换为 Uint8Array）
       return createResponse(true, {
         buffer: buffer,
         size: buffer.length
       })
     } catch (error) {
-      console.error('读取本地音频文件失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -602,7 +563,6 @@ function registerIpcHandlers() {
         return createResponse(false, null, result.error)
       }
     } catch (error) {
-      console.error('检查磁盘空间失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -619,7 +579,6 @@ function registerIpcHandlers() {
         return createResponse(false, null, result.error)
       }
     } catch (error) {
-      console.error('获取下载目录大小失败:', error)
       return createResponse(false, null, error)
     }
   })
@@ -634,8 +593,6 @@ app.on('ready', async () => {
       const decodedPath = decodeURIComponent(url)
       const normalizedPath = path.normalize(decodedPath)
       
-      console.log('local-audio 协议请求:', normalizedPath)
-      
       // 检查文件是否存在
       if (fs.existsSync(normalizedPath)) {
         // 使用流式传输
@@ -649,11 +606,9 @@ app.on('ready', async () => {
           data: stream
         })
       } else {
-        console.error('文件不存在:', normalizedPath)
         callback({ statusCode: 404 })
       }
     } catch (error) {
-      console.error('local-audio 协议错误:', error)
       callback({ statusCode: 500 })
     }
   })
@@ -678,14 +633,12 @@ app.on('activate', () => {
 // 应用退出前保存所有未写入的数据
 app.on('before-quit', async (event) => {
   if (fileManager) {
-    console.log('应用即将退出，保存所有未写入的数据...')
     event.preventDefault()
     
     try {
-      const result = await fileManager.shutdown()
-      console.log(`已保存 ${result.data.flushedCount} 个待写入的文件`)
+      await fileManager.shutdown()
     } catch (error) {
-      console.error('保存数据失败:', error)
+      // 保存数据失败
     }
     
     // 允许应用退出

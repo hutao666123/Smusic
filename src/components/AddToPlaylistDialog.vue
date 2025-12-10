@@ -127,7 +127,8 @@ const resultType = ref('success') // 'success' | 'error'
 
 // 计算属性：过滤后的歌单列表
 const filteredPlaylists = computed(() => {
-  const playlists = playlistStore.allLocalPlaylists
+  // 过滤掉"已下载"歌单
+  const playlists = playlistStore.allLocalPlaylists.filter(p => p.id !== 'local-downloads')
   if (!searchQuery.value.trim()) {
     return playlists
   }

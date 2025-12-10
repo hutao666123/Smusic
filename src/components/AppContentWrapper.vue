@@ -60,15 +60,7 @@ window.addEventListener('error', (event) => {
 // 应用启动时初始化数据
 onMounted(async () => {
   try {
-    console.log('正在加载歌单数据...')
-    const success = await playlistStore.loadAllPlaylists()
-    if (success) {
-      console.log('歌单数据加载成功')
-      showSuccess('数据加载完成')
-    } else {
-      console.error('歌单数据加载失败:', playlistStore.error)
-      showError(playlistStore.error || '加载歌单数据失败')
-    }
+    await playlistStore.loadAllPlaylists()
   } catch (error) {
     console.error('初始化应用数据失败:', error)
     showError('初始化应用失败，请重启应用')
