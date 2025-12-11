@@ -398,6 +398,8 @@ const loadMoreAlbums = async () => {
 }
 
 const playSong = (song) => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   const songData = {
     id: song.id,
@@ -413,6 +415,8 @@ const playSong = (song) => {
 const playAllTopSongs = () => {
   if (topSongs.value.length === 0) return
   
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   topSongs.value.forEach(song => {
     const songData = {
@@ -431,6 +435,8 @@ const playAllTopSongs = () => {
 const playAllNewSongs = () => {
   if (personalizedNewSongs.value.length === 0) return
   
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   personalizedNewSongs.value.forEach(song => {
     const songData = {

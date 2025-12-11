@@ -12,9 +12,16 @@
         <!-- 主内容 -->
         <main class="app-main">
           <router-view v-slot="{ Component }">
-            <keep-alive include="Discover">
-              <component :is="Component" />
-            </keep-alive>
+            <Transition
+              name="page-transition"
+              mode="out-in"
+              @enter="onTransitionEnter"
+              @leave="onTransitionLeave"
+            >
+              <keep-alive include="Discover">
+                <component :is="Component" :key="$route.path" />
+              </keep-alive>
+            </Transition>
           </router-view>
         </main>
 
@@ -28,7 +35,8 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useMessage, useDialog, useNotification } from 'naive-ui'
 import TitleBar from './TitleBar.vue'
 import Sidebar from './Sidebar.vue'
@@ -40,9 +48,24 @@ const message = useMessage()
 const dialog = useDialog()
 const notification = useNotification()
 const playlistStore = usePlaylistStore()
+const route = useRoute()
+const transitionType = ref('normal')
 
 // 初始化通知 API
 setupNotification(message, dialog, notification)
+
+// 过渡动画处理
+const onTransitionEnter = (el) => {
+  if (route.path === '/lyrics') {
+    el.style.animation = 'pageEnter 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+  }
+}
+
+const onTransitionLeave = (el) => {
+  if (route.path !== '/lyrics') {
+    el.style.animation = 'pageExit 0.6s cubic-bezier(0.6, 0, 0.84, 0.3) forwards'
+  }
+}
 
 // 全局错误处理
 window.addEventListener('unhandledrejection', (event) => {
@@ -111,6 +134,7 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  position: relative;
 }
 
 .app-footer {
@@ -127,5 +151,43 @@ onMounted(async () => {
 .app-main {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* 页面过渡动画 */
+.page-transition-enter-active,
+.page-transition-leave-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.page-transition-enter-from {
+  opacity: 0;
+  transform: scale(0.95) translateY(20px);
+}
+
+.page-transition-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-20px);
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9) rotateX(10deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg);
+  }
+}
+
+@keyframes pageExit {
+  from {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) rotateX(-10deg);
+  }
 }
 </style>

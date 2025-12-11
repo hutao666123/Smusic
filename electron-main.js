@@ -21,6 +21,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow
+let desktopLyricWindow = null
 let fileManager
 let playlistManager
 let downloadManager
@@ -57,7 +58,52 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+    // 关闭桌面歌词窗口
+    if (desktopLyricWindow) {
+      desktopLyricWindow.close()
+      desktopLyricWindow = null
+    }
   })
+}
+
+// 创建桌面歌词窗口
+function createDesktopLyricWindow() {
+  if (desktopLyricWindow) {
+    desktopLyricWindow.focus()
+    return
+  }
+
+  desktopLyricWindow = new BrowserWindow({
+    width: 1000,
+    height: 220,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  })
+
+  const lyricUrl = isDev
+    ? 'http://localhost:5173/desktop-lyric.html'
+    : `file://${path.join(__dirname, '../dist/desktop-lyric.html')}`
+
+  desktopLyricWindow.loadURL(lyricUrl)
+
+  desktopLyricWindow.on('closed', () => {
+    if (lyricHoverCheckInterval) {
+      clearInterval(lyricHoverCheckInterval)
+      lyricHoverCheckInterval = null
+    }
+    desktopLyricWindow = null
+  })
+  
+  // 启动鼠标悬停检测
+  startLyricHoverCheck()
 }
 
 function createMenu() {
@@ -150,6 +196,73 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close()
+})
+
+// 桌面歌词窗口控制
+ipcMain.on('open-desktop-lyric', () => {
+  createDesktopLyricWindow()
+})
+
+ipcMain.on('close-desktop-lyric', () => {
+  if (desktopLyricWindow) {
+    desktopLyricWindow.close()
+    desktopLyricWindow = null
+  }
+})
+
+ipcMain.on('set-desktop-lyric-lock', (event, locked) => {
+  if (desktopLyricWindow) {
+    desktopLyricWindow.setIgnoreMouseEvents(locked, { forward: true })
+  }
+})
+
+// 桌面歌词窗口鼠标悬停检测
+let lyricHoverCheckInterval = null
+
+function startLyricHoverCheck() {
+  if (lyricHoverCheckInterval) return
+  
+  lyricHoverCheckInterval = setInterval(() => {
+    if (!desktopLyricWindow) {
+      clearInterval(lyricHoverCheckInterval)
+      lyricHoverCheckInterval = null
+      return
+    }
+    
+    const { screen } = require('electron')
+    const point = screen.getCursorScreenPoint()
+    const bounds = desktopLyricWindow.getBounds()
+    
+    const isInside = point.x >= bounds.x && 
+                     point.x <= bounds.x + bounds.width &&
+                     point.y >= bounds.y && 
+                     point.y <= bounds.y + bounds.height
+    
+    if (desktopLyricWindow) {
+      desktopLyricWindow.webContents.send('mouse-hover-state', isInside)
+    }
+  }, 100)
+}
+
+// 桌面歌词控制播放（从歌词窗口发送到主窗口）
+ipcMain.on('desktop-lyric-control', (event, action) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('desktop-lyric-control', action)
+  }
+})
+
+// 主窗口同步播放状态到桌面歌词窗口
+ipcMain.on('sync-player-state', (event, state) => {
+  if (desktopLyricWindow) {
+    desktopLyricWindow.webContents.send('player-state-update', state)
+  }
+})
+
+// 同步歌词到桌面歌词窗口
+ipcMain.on('sync-lyric', (event, lyricData) => {
+  if (desktopLyricWindow) {
+    desktopLyricWindow.webContents.send('lyric-update', lyricData)
+  }
 })
 
 // 初始化管理器

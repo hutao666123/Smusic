@@ -20,7 +20,7 @@
       <!-- 新建歌单快捷入口 -->
       <div class="create-playlist-section">
         <button class="create-playlist-btn" @click="showCreateForm = !showCreateForm">
-          <span class="icon">➕</span>
+          <span class="icon">+</span>
           <span>新建歌单</span>
         </button>
       </div>

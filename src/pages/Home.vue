@@ -187,6 +187,8 @@ const loadRandomSongs = async () => {
 const startRandomPlay = () => {
   if (randomSongs.value.length === 0) return
 
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   randomSongs.value.forEach(song => {
     playerStore.addToPlaylist(song)
@@ -198,6 +200,8 @@ const startRandomPlay = () => {
 // 从队列中播放指定歌曲
 const playSongFromQueue = (index) => {
   playerStore.clearPlaylist()
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   // 从点击的歌曲开始添加到播放列表
   for (let i = index; i < randomSongs.value.length; i++) {
     playerStore.addToPlaylist(randomSongs.value[i])

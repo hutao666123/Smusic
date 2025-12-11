@@ -151,6 +151,8 @@ const goToLikeSongs = () => {
 }
 
 const playSong = (song) => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   playerStore.addToPlaylist(song)
   playerStore.play()

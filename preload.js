@@ -37,6 +37,42 @@ contextBridge.exposeInMainWorld('electron', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
 
+  // 桌面歌词窗口控制
+  openDesktopLyric: () => ipcRenderer.send('open-desktop-lyric'),
+  closeDesktopLyric: () => ipcRenderer.send('close-desktop-lyric'),
+  setDesktopLyricLock: (locked) => ipcRenderer.send('set-desktop-lyric-lock', locked),
+  
+  // 桌面歌词控制播放
+  desktopLyricControl: (action) => ipcRenderer.send('desktop-lyric-control', action),
+  
+  // 同步播放状态到桌面歌词
+  syncPlayerState: (state) => ipcRenderer.send('sync-player-state', state),
+  
+  // 同步歌词到桌面歌词
+  syncLyric: (lyricData) => ipcRenderer.send('sync-lyric', lyricData),
+  
+  // 监听播放状态更新（桌面歌词窗口用）
+  onPlayerStateUpdate: (callback) => {
+    ipcRenderer.on('player-state-update', (event, state) => callback(state))
+  },
+  
+  // 监听歌词更新（桌面歌词窗口用）
+  onLyricUpdate: (callback) => {
+    const listener = (event, data) => callback(data)
+    ipcRenderer.on('lyric-update', listener)
+    return () => ipcRenderer.removeListener('lyric-update', listener)
+  },
+  
+  // 监听桌面歌词控制（主窗口用）
+  onDesktopLyricControl: (callback) => {
+    ipcRenderer.on('desktop-lyric-control', (event, action) => callback(action))
+  },
+  
+  // 监听鼠标悬停状态（桌面歌词窗口用）
+  onMouseHoverState: (callback) => {
+    ipcRenderer.on('mouse-hover-state', (event, isInside) => callback(isInside))
+  },
+
   // 开发者工具
   openDevTools: () => ipcRenderer.send('open-dev-tools'),
 

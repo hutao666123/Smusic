@@ -183,6 +183,8 @@ const handleSearch = async () => {
 }
 
 const playSong = (song) => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   playerStore.addToPlaylist({
     id: song.id,

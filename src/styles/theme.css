@@ -1,0 +1,27 @@
+/* 全局主题配置 */
+:root {
+  /* 主题颜色 */
+  --icon-color: #e6e6e6;
+  --primary-bg: rgba(0, 0, 0, 0.7);
+  --text-color: #ffffff;
+}
+
+/* SVG 图标通用样式 */
+.icon,
+.icon path {
+  fill: var(--icon-color);
+}
+
+/* 深色主题（默认） */
+[data-theme="dark"] {
+  --icon-color: #e6e6e6;
+  --primary-bg: rgba(0, 0, 0, 0.7);
+  --text-color: #ffffff;
+}
+
+/* 浅色主题 */
+[data-theme="light"] {
+  --icon-color: #333333;
+  --primary-bg: rgba(255, 255, 255, 0.9);
+  --text-color: #000000;
+}

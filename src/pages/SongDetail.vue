@@ -33,8 +33,12 @@
 
         <!-- 歌曲信息 -->
         <div class="song-info">
-          <h2 class="song-title">{{ currentSong.name }}</h2>
-          <p class="song-artist">{{ currentSong.artist }}</p>
+          <h2 class="song-title" ref="songTitleRef">
+            <span class="title-text">{{ currentSong.name }}</span>
+          </h2>
+          <p class="song-artist" ref="songArtistRef">
+            <span class="artist-text">{{ currentSong.artist }}</span>
+          </p>
         </div>
       </div>
 
@@ -468,10 +472,34 @@ const goBack = () => {
   font-size: 28px;
   font-weight: 700;
   margin: 0 0 12px 0;
+  max-width: 300px;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.title-text {
+  display: inline-block;
   background: linear-gradient(135deg, #fff, #f093fb);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: autoScroll 12s linear infinite;
+}
+
+.song-artist {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+@keyframes autoScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .song-artist {

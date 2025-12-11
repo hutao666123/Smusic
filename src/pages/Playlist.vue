@@ -77,13 +77,13 @@
                 {{ isFavorite(song.id) ? '❤️' : '🤍' }}
               </button>
 
-              <!-- 添加到播放列表按钮 -->
+              <!-- 加入歌单按钮 -->
               <button 
-                @click.stop="addToPlaylist(song, $event)" 
+                @click.stop="openAddToPlaylistDialog(song)" 
                 class="action-btn add-btn" 
-                title="添加到播放列表"
+                title="加入歌单"
               >
-                ➕
+                +
               </button>
 
               <!-- 下载按钮 -->
@@ -336,6 +336,8 @@ watch(() => route.params.id, async () => {
 })
 
 const playAll = async () => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   // 先播放已加载的歌曲
   playerStore.clearPlaylist()
   songs.value.forEach(s => {
@@ -382,6 +384,8 @@ const playAll = async () => {
 }
 
 const playSong = (song, displayIndex) => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   // 找到歌曲在完整列表中的真实索引
   const realIndex = songs.value.findIndex(s => s.id === song.id)
   
@@ -630,6 +634,23 @@ const showContextMenu = (event, song) => {
 // 隐藏右键菜单
 const hideContextMenu = () => {
   contextMenu.value.show = false
+}
+
+// 打开加入歌单对话框
+const openAddToPlaylistDialog = (song) => {
+  selectedSong.value = {
+    id: song.id,
+    name: song.name,
+    artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
+    album: {
+      id: song.al?.id || '',
+      name: song.al?.name || '',
+      picUrl: song.al?.picUrl || ''
+    },
+    duration: song.dt || 0
+  }
+  selectedSongs.value = []
+  showAddDialog.value = true
 }
 
 // 右键菜单：添加到歌单

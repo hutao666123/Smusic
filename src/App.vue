@@ -15,6 +15,7 @@ import { defineComponent, h } from 'vue'
 import { useMessage, useDialog, useNotification } from 'naive-ui'
 import { setupNotification } from './utils/notification'
 import AppContentWrapper from './components/AppContentWrapper.vue'
+import './styles/theme.css'
 </script>
 
 <style>

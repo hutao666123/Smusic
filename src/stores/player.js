@@ -183,6 +183,6 @@ export const usePlayerStore = defineStore('player', () => {
   persist: {
     key: 'player-state',
     storage: localStorage,
-    paths: ['playlist', 'currentIndex', 'volume', 'isLocalPlayback', 'forceLocalMode', 'currentTime', 'isPlaying']
+    paths: ['playlist', 'currentIndex', 'volume', 'isLocalPlayback', 'forceLocalMode', 'currentTime']
   }
 })

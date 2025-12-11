@@ -15,7 +15,7 @@
           <div class="action-buttons">
             <button @click="playAll" class="play-all-btn">▶ 播放全部</button>
             <button @click="downloadAll" class="download-all-btn" :disabled="songs.length === 0">⬇ 下载全部</button>
-            <button @click="addAllToPlaylist" class="add-all-btn" :disabled="songs.length === 0">➕ 添加全部到歌单</button>
+            <button @click="addAllToPlaylist" class="add-all-btn" :disabled="songs.length === 0">+ 添加全部到歌单</button>
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@
               class="action-btn add-btn"
               title="添加到播放列表"
             >
-              ➕
+              +
             </button>
 
             <!-- 下载按钮 -->
@@ -96,7 +96,7 @@
       @click="hideContextMenu"
     >
       <div class="context-menu-item" @click="contextMenuAddToPlaylist">
-        <span class="menu-icon">➕</span>
+        <span class="menu-icon">+</span>
         <span>添加到歌单</span>
       </div>
       <div class="context-menu-item" @click="contextMenuToggleFavorite">
@@ -169,6 +169,8 @@ onMounted(async () => {
 })
 
 const playAll = () => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   songs.value.forEach(song => {
     playerStore.addToPlaylist({
@@ -182,6 +184,8 @@ const playAll = () => {
 }
 
 const playSong = (song, index) => {
+  // 非本地歌单，使用在线播放
+  playerStore.forceLocalMode = false
   playerStore.clearPlaylist()
   songs.value.forEach((s, i) => {
     if (i >= index) {

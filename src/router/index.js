@@ -8,6 +8,7 @@ import Discover from '../pages/Discover.vue'
 import Profile from '../pages/Profile.vue'
 import SongDetail from '../pages/SongDetail.vue'
 import Lyrics from '../pages/Lyrics.vue'
+import Player from '../pages/Player.vue'
 import TopPlaylists from '../pages/TopPlaylists.vue'
 import NewAlbums from '../pages/NewAlbums.vue'
 import Album from '../pages/Album.vue'
@@ -62,6 +63,11 @@ const routes = [
     component: Lyrics
   },
   {
+    path: '/player',
+    name: 'Player',
+    component: Player
+  },
+  {
     path: '/playlist/top',
     name: 'TopPlaylists',
     component: TopPlaylists
@@ -96,6 +102,17 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes
+})
+
+// 添加路由过渡动画
+router.beforeEach((to, from, next) => {
+  // 标记过渡类型
+  if (to.path === '/lyrics' && from.path !== '/lyrics') {
+    document.documentElement.style.setProperty('--route-transition', 'enter')
+  } else if (from.path === '/lyrics' && to.path !== '/lyrics') {
+    document.documentElement.style.setProperty('--route-transition', 'exit')
+  }
+  next()
 })
 
 export default router
