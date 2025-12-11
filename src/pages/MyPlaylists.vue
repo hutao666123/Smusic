@@ -1,7 +1,6 @@
 <template>
   <div class="my-playlists">
     <div class="page-header">
-      <h1 class="page-title">我的歌单</h1>
       <button class="create-btn" @click="showCreateDialog = true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 5v14M5 12h14" />
@@ -490,7 +489,8 @@ const goToOnlinePlaylist = (playlist) => {
 <style scoped>
 .my-playlists {
   min-height: 100vh;
-  color: white;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
   padding-bottom: 100px;
   max-width: 1400px;
@@ -554,7 +554,7 @@ const goToOnlinePlaylist = (playlist) => {
 .loading-spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  border: 4px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -566,7 +566,7 @@ const goToOnlinePlaylist = (playlist) => {
 
 .loading-state p {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 /* 歌单区域 */
@@ -578,7 +578,7 @@ const goToOnlinePlaylist = (playlist) => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 20px 0;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .playlists-grid {
@@ -784,7 +784,7 @@ const goToOnlinePlaylist = (playlist) => {
 
 .playlist-meta {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -795,9 +795,9 @@ const goToOnlinePlaylist = (playlist) => {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
   border-radius: 12px;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed var(--border-color);
 }
 
 .empty-icon {
@@ -808,7 +808,7 @@ const goToOnlinePlaylist = (playlist) => {
 
 .empty-text {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0 0 20px 0;
 }
 
@@ -844,12 +844,12 @@ const goToOnlinePlaylist = (playlist) => {
 }
 
 .dialog {
-  background: linear-gradient(135deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 16px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .dialog-header {
@@ -857,7 +857,7 @@ const goToOnlinePlaylist = (playlist) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
@@ -871,8 +871,8 @@ const goToOnlinePlaylist = (playlist) => {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -881,7 +881,7 @@ const goToOnlinePlaylist = (playlist) => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .close-btn svg {
@@ -906,17 +906,17 @@ const goToOnlinePlaylist = (playlist) => {
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .form-group input,
 .form-group textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   padding: 12px;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
   transition: all 0.3s;
@@ -926,7 +926,7 @@ const goToOnlinePlaylist = (playlist) => {
 .form-group textarea:focus {
   outline: none;
   border-color: #667eea;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--input-focus-bg);
 }
 
 .form-group textarea {
@@ -937,7 +937,7 @@ const goToOnlinePlaylist = (playlist) => {
 .char-count {
   margin-top: 4px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   text-align: right;
 }
 
@@ -946,7 +946,7 @@ const goToOnlinePlaylist = (playlist) => {
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-cancel,
@@ -962,12 +962,12 @@ const goToOnlinePlaylist = (playlist) => {
 }
 
 .btn-cancel {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .btn-confirm {
@@ -1059,7 +1059,7 @@ const goToOnlinePlaylist = (playlist) => {
 .loading-more .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1067,7 +1067,7 @@ const goToOnlinePlaylist = (playlist) => {
 
 .loading-more p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 

@@ -246,7 +246,8 @@ const getDisplayedPlaylists = () => {
 <style scoped>
 .home {
   min-height: 100vh;
-  color: white;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding-bottom: 100px;
 }
 
@@ -262,8 +263,8 @@ const getDisplayedPlaylists = () => {
 .loading-spinner {
   width: 60px;
   height: 60px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: white;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -274,7 +275,7 @@ const getDisplayedPlaylists = () => {
 
 .loading-state p {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 /* 主视觉区 */
@@ -352,7 +353,7 @@ const getDisplayedPlaylists = () => {
 
 .hero-subtitle {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0 0 40px 0;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
@@ -435,8 +436,8 @@ const getDisplayedPlaylists = () => {
 
 .queue-count {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  background: var(--button-bg);
   padding: 6px 14px;
   border-radius: 20px;
 }
@@ -468,7 +469,7 @@ const getDisplayedPlaylists = () => {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
 }
 
 .song-cover img {
@@ -536,7 +537,7 @@ const getDisplayedPlaylists = () => {
 
 .song-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -551,7 +552,7 @@ const getDisplayedPlaylists = () => {
   font-size: 24px;
   font-weight: 700;
   margin: 0;
-  color: white;
+  color: var(--text-primary);
 }
 
 .carousel-wrapper {
@@ -566,9 +567,9 @@ const getDisplayedPlaylists = () => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -579,7 +580,7 @@ const getDisplayedPlaylists = () => {
 }
 
 .carousel-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
   transform: scale(1.1);
 }
 
@@ -616,7 +617,7 @@ const getDisplayedPlaylists = () => {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
 }
 
 .playlist-cover img {

@@ -144,7 +144,8 @@ const goBack = () => {
 <style scoped>
 .new-albums {
   min-height: 100vh;
-  color: white;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
   padding-bottom: 100px;
 }
@@ -163,9 +164,9 @@ const goBack = () => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,7 +175,7 @@ const goBack = () => {
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
   transform: scale(1.1);
 }
 
@@ -187,7 +188,7 @@ const goBack = () => {
   font-size: 32px;
   font-weight: 700;
   margin: 0;
-  color: white;
+  color: var(--text-primary);
 }
 
 .albums-grid {
@@ -273,13 +274,13 @@ const goBack = () => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   min-height: 2.8em;
 }
 
 .album-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0 0 4px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -288,7 +289,7 @@ const goBack = () => {
 
 .album-date {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   margin: 0;
 }
 
@@ -304,7 +305,7 @@ const goBack = () => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -318,7 +319,7 @@ const goBack = () => {
 
 .loading-more p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -329,7 +330,7 @@ const goBack = () => {
 
 .no-more p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   margin: 0;
 }
 

@@ -285,16 +285,16 @@ const handleClose = () => {
 }
 
 .download-manager-content {
-  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 12px;
   width: 90%;
   max-width: 800px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -315,7 +315,7 @@ const handleClose = () => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .manager-header h3 {
@@ -327,7 +327,7 @@ const handleClose = () => {
 .close-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -341,8 +341,8 @@ const handleClose = () => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 /* 统计信息 */
@@ -351,7 +351,7 @@ const handleClose = () => {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .stat-item {
@@ -360,14 +360,14 @@ const handleClose = () => {
 
 .stat-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: white;
+  color: var(--text-primary);
 }
 
 .stat-value.active {
@@ -385,7 +385,7 @@ const handleClose = () => {
 /* 总体进度 */
 .overall-progress {
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .progress-info {
@@ -403,7 +403,7 @@ const handleClose = () => {
 
 .progress-bar {
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-color);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -424,24 +424,24 @@ const handleClose = () => {
   display: flex;
   gap: 12px;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .action-btn {
   flex: 1;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .action-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--button-hover-bg);
+  border-color: var(--border-color);
 }
 
 .action-btn:disabled {
@@ -490,7 +490,7 @@ const handleClose = () => {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 }
 
 .empty-icon {
@@ -510,15 +510,15 @@ const handleClose = () => {
   gap: 16px;
   padding: 16px;
   margin-bottom: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   transition: all 0.3s;
 }
 
 .task-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
+  border-color: var(--border-color);
 }
 
 .task-item.status-completed {
@@ -558,7 +558,7 @@ const handleClose = () => {
 
 .task-meta {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   display: flex;
   gap: 12px;
   align-items: center;
@@ -587,7 +587,7 @@ const handleClose = () => {
 
 .progress-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   width: 40px;
   text-align: right;
 }
@@ -645,18 +645,18 @@ const handleClose = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .task-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--button-hover-bg);
+  border-color: var(--border-color);
   transform: scale(1.05);
 }
 

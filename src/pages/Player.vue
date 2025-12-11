@@ -1,4 +1,5 @@
 <template>
+  <!--  全屏/专注界面-->
   <div class="player-page" @click="goBack">
     <div class="player-container">
       <div class="album-section">

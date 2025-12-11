@@ -1,4 +1,5 @@
 <template>
+  <!--  推荐界面-->
   <div class="discover">
     <div class="discover-content">
       <!-- 顶部轮播横幅 - 热门歌单 -->
@@ -623,9 +624,9 @@ const goToAlbumList = () => {
 <style scoped>
 .discover {
   min-height: 100vh;
-  color: white;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
 }
 
 .discover-content {
@@ -650,7 +651,7 @@ const goToAlbumList = () => {
   font-size: 24px;
   font-weight: 700;
   margin: 0;
-  color: white;
+  color: var(--text-primary);
 }
 
 .banner-content-wrapper {
@@ -664,9 +665,9 @@ const goToAlbumList = () => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -690,7 +691,7 @@ const goToAlbumList = () => {
 }
 
 .banner-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
   transform: scale(1.1);
 }
 
@@ -819,7 +820,7 @@ const goToAlbumList = () => {
   font-size: 24px;
   font-weight: 700;
   margin: 0;
-  color: white;
+  color: var(--text-primary);
 }
 
 .more-btn {
@@ -828,14 +829,14 @@ const goToAlbumList = () => {
   gap: 5px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
   transition: color 0.3s;
 }
 
 .more-btn:hover {
-  color: white;
+  color: var(--text-primary);
 }
 
 .more-btn svg {
@@ -856,7 +857,7 @@ const goToAlbumList = () => {
 .loading-spinner {
   width: 60px;
   height: 60px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  border: 4px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -879,7 +880,7 @@ const goToAlbumList = () => {
 
 .loading-state p {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -896,9 +897,9 @@ const goToAlbumList = () => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -909,7 +910,7 @@ const goToAlbumList = () => {
 }
 
 .carousel-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
   transform: scale(1.1);
 }
 
@@ -958,7 +959,7 @@ const goToAlbumList = () => {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
 }
 
 .playlist-cover img,
@@ -1022,13 +1023,13 @@ const goToAlbumList = () => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   min-height: 2.8em;
 }
 
 .album-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1062,7 +1063,7 @@ const goToAlbumList = () => {
   font-size: 22px;
   font-weight: 700;
   margin: 0;
-  color: white;
+  color: var(--text-primary);
 }
 
 .play-all-btn {
@@ -1093,7 +1094,7 @@ const goToAlbumList = () => {
 
 .chart-update {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   margin: 0 0 20px 0;
 }
 
@@ -1121,7 +1122,7 @@ const goToAlbumList = () => {
   text-align: center;
   font-weight: 800;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 .chart-rank.top {
@@ -1144,12 +1145,12 @@ const goToAlbumList = () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .chart-song-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1158,9 +1159,9 @@ const goToAlbumList = () => {
 .chart-add-btn {
   flex: 0 0 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s;
@@ -1188,7 +1189,7 @@ const goToAlbumList = () => {
 .chart-empty {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   font-size: 14px;
 }
 
@@ -1208,7 +1209,7 @@ const goToAlbumList = () => {
 .section-loading .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1216,7 +1217,7 @@ const goToAlbumList = () => {
 
 .section-loading p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -1225,10 +1226,10 @@ const goToAlbumList = () => {
   width: 100%;
   padding: 12px;
   margin-top: 15px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
@@ -1239,8 +1240,8 @@ const goToAlbumList = () => {
 }
 
 .show-more-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
+  border-color: var(--border-color);
 }
 
 .show-more-btn svg {

@@ -1,4 +1,5 @@
 <template>
+  <!-- 单纯歌词界面-->
   <div class="lyrics-page">
     <div class="lyrics-container">
       <div v-if="loading" class="loading">加载歌词中...</div>
@@ -130,7 +131,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  background: var(--page-bg);
 }
 
 .lyrics-container {
@@ -148,7 +149,7 @@ onMounted(() => {
   justify-content: center;
   height: 100%;
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .lyrics-text {
@@ -161,7 +162,7 @@ onMounted(() => {
 .lyric-line {
   padding: 12px 20px;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   transition: all 0.3s;
   font-size: 16px;
   line-height: 1.8;
@@ -169,8 +170,8 @@ onMounted(() => {
 }
 
 .lyric-line.active {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-hover-bg);
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 20px;
   transform: scale(1.05);
@@ -185,11 +186,11 @@ onMounted(() => {
 }
 
 .lyrics-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
   border-radius: 4px;
 }
 
 .lyrics-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--button-hover-bg);
 }
 </style>

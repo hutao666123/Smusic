@@ -126,13 +126,13 @@ watch(() => props.visible, async (newVal) => {
 }
 
 .dialog-content {
-  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 12px;
   width: 90%;
   max-width: 450px;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -152,7 +152,7 @@ watch(() => props.visible, async (newVal) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
@@ -164,7 +164,7 @@ watch(() => props.visible, async (newVal) => {
 .close-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -178,8 +178,8 @@ watch(() => props.visible, async (newVal) => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .dialog-body {
@@ -199,17 +199,17 @@ watch(() => props.visible, async (newVal) => {
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: all 0.3s;
@@ -219,13 +219,13 @@ watch(() => props.visible, async (newVal) => {
 
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
 }
 
 .form-input:focus,
 .form-textarea:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(102, 126, 234, 0.6);
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
 }
 
 .form-textarea {
@@ -236,7 +236,7 @@ watch(() => props.visible, async (newVal) => {
 .char-count {
   margin-top: 4px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   text-align: right;
 }
 
@@ -245,7 +245,7 @@ watch(() => props.visible, async (newVal) => {
   gap: 12px;
   justify-content: flex-end;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
 }
 
 .btn {
@@ -265,17 +265,17 @@ watch(() => props.visible, async (newVal) => {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .btn-primary:hover:not(:disabled) {

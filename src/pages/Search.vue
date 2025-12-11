@@ -426,7 +426,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .search {
-  color: white;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-primary);
+  padding: 20px;
 }
 
 .search-header {
@@ -441,21 +444,21 @@ onBeforeUnmount(() => {
 .search-input {
   flex: 1;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
-  color: white;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 }
 
 .search-input:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--input-focus-bg);
+  border-color: var(--input-focus-border);
 }
 
 .search-btn {
@@ -487,7 +490,7 @@ onBeforeUnmount(() => {
 }
 
 .search-tips p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .search-results h3 {
@@ -557,7 +560,7 @@ onBeforeUnmount(() => {
 
 .song-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -726,12 +729,12 @@ onBeforeUnmount(() => {
 /* 右键菜单 */
 .context-menu {
   position: fixed;
-  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 8px 0;
   min-width: 180px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   z-index: 3000;
   animation: contextMenuIn 0.2s ease-out;
 }
@@ -754,7 +757,7 @@ onBeforeUnmount(() => {
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.2s;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
 }
 

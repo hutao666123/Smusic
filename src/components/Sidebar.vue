@@ -89,22 +89,7 @@
         </div>
       </div>
 
-      <!-- 其他菜单 -->
-      <div class="menu-section">
-        <h3 class="section-title">其他</h3>
-        <router-link to="/profile" class="menu-item" :class="{ active: isActive('/profile') }">
-          <span class="label">个人中心</span>
-        </router-link>
-      </div>
     </nav>
-
-    <!-- 底部菜单 -->
-    <div class="sidebar-footer">
-      <router-link to="/debug" class="menu-item debug-item" :class="{ active: isActive('/debug') }">
-        <span class="icon">⚙️</span>
-        <span class="label">诊断</span>
-      </router-link>
-    </div>
 
     <!-- 创建歌单对话框 -->
     <CreatePlaylistDialog
@@ -162,12 +147,12 @@ const handlePlaylistCreated = (newPlaylist) => {
 <style scoped>
 .sidebar {
   width: 180px;
-  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   height: 100vh;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid var(--border-color);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -242,7 +227,7 @@ const handlePlaylistCreated = (newPlaylist) => {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
   padding: 8px;
   letter-spacing: 0.5px;
@@ -250,7 +235,7 @@ const handlePlaylistCreated = (newPlaylist) => {
 
 .more-link {
   font-size: 12px;
-  color: rgba(102, 126, 234, 0.8);
+  color: var(--primary-color);
   text-decoration: none;
   padding: 4px 8px;
   border-radius: 4px;
@@ -258,8 +243,8 @@ const handlePlaylistCreated = (newPlaylist) => {
 }
 
 .more-link:hover {
-  color: rgba(102, 126, 234, 1);
-  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-hover-color);
+  background: var(--button-bg);
 }
 
 .menu-item {
@@ -269,7 +254,7 @@ const handlePlaylistCreated = (newPlaylist) => {
   padding: 8px 10px;
   margin: 2px 0;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   text-decoration: none;
   cursor: pointer;
   transition: all 0.3s;
@@ -280,13 +265,13 @@ const handlePlaylistCreated = (newPlaylist) => {
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .menu-item.active {
-  background: rgba(102, 126, 234, 0.3);
-  color: #667eea;
+  background: var(--primary-color);
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -308,8 +293,8 @@ const handlePlaylistCreated = (newPlaylist) => {
 .count {
   flex: 0 0 auto;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  background: var(--button-bg);
   padding: 2px 6px;
   border-radius: 10px;
   margin-left: auto;
@@ -326,7 +311,7 @@ const handlePlaylistCreated = (newPlaylist) => {
 
 .collapse-icon {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   transition: transform 0.3s;
   display: inline-block;
 }
@@ -343,9 +328,9 @@ const handlePlaylistCreated = (newPlaylist) => {
 
 /* 添加按钮 */
 .add-btn {
-  background: rgba(102, 126, 234, 0.5);
+  background: var(--primary-color);
   border: none;
-  color: white;
+  color: var(--text-primary);
   width: 24px;
   height: 24px;
   border-radius: 4px;
@@ -359,13 +344,13 @@ const handlePlaylistCreated = (newPlaylist) => {
 }
 
 .add-btn:hover {
-  background: rgba(102, 126, 234, 0.8);
+  background: var(--primary-hover-color);
 }
 
 .empty-playlists {
   padding: 12px 8px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -377,7 +362,7 @@ const handlePlaylistCreated = (newPlaylist) => {
   padding: 6px 10px;
   margin: 2px 0;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s;
   font-size: 12px;
@@ -386,13 +371,13 @@ const handlePlaylistCreated = (newPlaylist) => {
 }
 
 .playlist-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .playlist-item.active {
-  background: rgba(102, 126, 234, 0.3);
-  color: #667eea;
+  background: var(--primary-color);
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -408,22 +393,5 @@ const handlePlaylistCreated = (newPlaylist) => {
   white-space: nowrap;
 }
 
-/* 底部 */
-.sidebar-footer {
-  padding: 12px 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.debug-item {
-  color: rgba(255, 193, 7, 0.7);
-}
-
-.debug-item:hover {
-  color: rgba(255, 193, 7, 1);
-}
-
-.debug-item.active {
-  background: rgba(255, 193, 7, 0.2);
-  color: rgba(255, 193, 7, 1);
-}
 </style>

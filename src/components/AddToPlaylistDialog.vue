@@ -306,16 +306,16 @@ watch(() => props.visible, (newVal) => {
 }
 
 .dialog-content {
-  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   animation: slideUp 0.3s ease-out;
   position: relative;
 }
@@ -337,7 +337,7 @@ watch(() => props.visible, (newVal) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
@@ -349,7 +349,7 @@ watch(() => props.visible, (newVal) => {
 .close-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -363,41 +363,41 @@ watch(() => props.visible, (newVal) => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 /* 搜索框 */
 .search-box {
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .search-input {
   width: 100%;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: all 0.3s;
 }
 
 .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
 }
 
 .search-input:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(102, 126, 234, 0.6);
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
 }
 
 /* 新建歌单 */
 .create-playlist-section {
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .create-playlist-btn {
@@ -406,18 +406,18 @@ watch(() => props.visible, (newVal) => {
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: rgba(102, 126, 234, 0.2);
-  border: 1px dashed rgba(102, 126, 234, 0.5);
+  background: var(--primary-color);
+  border: 1px dashed var(--primary-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
   transition: all 0.3s;
 }
 
 .create-playlist-btn:hover {
-  background: rgba(102, 126, 234, 0.3);
-  border-color: rgba(102, 126, 234, 0.7);
+  background: var(--primary-hover-color);
+  border-color: var(--primary-hover-color);
 }
 
 .create-playlist-btn .icon {
@@ -427,18 +427,18 @@ watch(() => props.visible, (newVal) => {
 /* 创建表单 */
 .create-form {
   padding: 16px 20px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--button-bg);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: all 0.3s;
@@ -448,13 +448,13 @@ watch(() => props.visible, (newVal) => {
 
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
 }
 
 .form-input:focus,
 .form-textarea:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(102, 126, 234, 0.6);
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
 }
 
 .form-textarea {
@@ -507,12 +507,12 @@ watch(() => props.visible, (newVal) => {
 }
 
 .playlist-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--button-bg);
 }
 
 .playlist-item.selected {
-  background: rgba(102, 126, 234, 0.3);
-  border-color: rgba(102, 126, 234, 0.6);
+  background: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .playlist-info {
@@ -543,7 +543,7 @@ watch(() => props.visible, (newVal) => {
 
 .playlist-count {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -556,7 +556,7 @@ watch(() => props.visible, (newVal) => {
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -566,7 +566,7 @@ watch(() => props.visible, (newVal) => {
   gap: 12px;
   justify-content: flex-end;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
 }
 
 /* 按钮 */
@@ -587,17 +587,17 @@ watch(() => props.visible, (newVal) => {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .btn-primary:hover:not(:disabled) {

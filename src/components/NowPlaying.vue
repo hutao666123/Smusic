@@ -155,7 +155,7 @@ const downloadSong = () => {
   display: flex;
   gap: 40px;
   padding: 30px 0;
-  color: white;
+  color: var(--text-primary);
 }
 
 .now-playing-left {
@@ -205,15 +205,15 @@ const downloadSong = () => {
 
 .song-artist {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .song-meta {
   margin-bottom: 24px;
   padding: 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .meta-item {
@@ -228,12 +228,12 @@ const downloadSong = () => {
 }
 
 .meta-label {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   min-width: 80px;
 }
 
 .meta-value {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 .action-buttons {
@@ -243,9 +243,9 @@ const downloadSong = () => {
 }
 
 .action-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -258,8 +258,8 @@ const downloadSong = () => {
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--button-hover-bg);
+  border-color: var(--border-color);
 }
 
 .like-btn.liked {
@@ -268,7 +268,7 @@ const downloadSong = () => {
 }
 
 .lyrics-preview {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 16px;
 }
@@ -288,7 +288,7 @@ const downloadSong = () => {
 .no-lyrics {
   text-align: center;
   padding: 20px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -301,7 +301,7 @@ const downloadSong = () => {
 .lyric-line {
   font-size: 14px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   padding: 4px 0;
 }
 
@@ -311,9 +311,9 @@ const downloadSong = () => {
 }
 
 .show-more-btn {
-  background: rgba(102, 126, 234, 0.3);
-  border: 1px solid rgba(102, 126, 234, 0.5);
-  color: rgba(102, 126, 234, 1);
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
@@ -322,8 +322,8 @@ const downloadSong = () => {
 }
 
 .show-more-btn:hover {
-  background: rgba(102, 126, 234, 0.5);
-  border-color: rgba(102, 126, 234, 0.8);
+  background: var(--primary-hover-color);
+  border-color: var(--primary-hover-color);
 }
 
 .no-song {
@@ -331,7 +331,7 @@ const downloadSong = () => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: white;
+  color: var(--text-primary);
 }
 
 .empty-state {
@@ -346,12 +346,12 @@ const downloadSong = () => {
 
 .empty-state p {
   margin: 8px 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-primary);
 }
 
 .hint {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 }
 
 /* 滚动条样式 */

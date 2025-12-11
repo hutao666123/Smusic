@@ -924,8 +924,8 @@ const toggleFullscreenPlayer = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: white;
-  background: rgba(0, 0, 0, 0.7);
+  color: var(--text-primary);
+  background: var(--card-bg);
   padding: 15px 20px;
   border-radius: 8px;
 }
@@ -1047,7 +1047,7 @@ const toggleFullscreenPlayer = () => {
 
 .song-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   overflow: hidden;
   width: 100%;
   position: relative;
@@ -1078,9 +1078,9 @@ const toggleFullscreenPlayer = () => {
 }
 
 .control-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
   border: none;
-  color: white;
+  color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -1089,25 +1089,25 @@ const toggleFullscreenPlayer = () => {
 }
 
 .control-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--button-hover-bg);
 }
 
 .play-btn {
-  background: rgba(102, 126, 234, 0.8);
+  background: var(--button-bg);
   padding: 8px 16px;
 }
 
 .play-btn:hover {
-  background: rgba(102, 126, 234, 1);
+  background: var(--button-hover-bg);
 }
 
 .mode-control-btn {
-  background: rgba(102, 126, 234, 0.6);
+  background: var(--button-bg);
   font-size: 18px;
 }
 
 .mode-control-btn:hover {
-  background: rgba(102, 126, 234, 0.8);
+  background: var(--button-hover-bg);
   transform: scale(1.05);
 }
 
@@ -1128,7 +1128,7 @@ const toggleFullscreenPlayer = () => {
   flex: 1;
   position: relative;
   height: 6px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-color);
   border-radius: 3px;
   cursor: pointer;
   transition: height 0.2s ease;
@@ -1137,7 +1137,7 @@ const toggleFullscreenPlayer = () => {
 
 .progress-bar:hover {
   height: 8px;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--button-bg);
 }
 
 .progress {
@@ -1222,7 +1222,7 @@ const toggleFullscreenPlayer = () => {
 .volume-icon-btn {
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-primary);
   padding: 8px;
   cursor: pointer;
   display: flex;
@@ -1343,9 +1343,9 @@ const toggleFullscreenPlayer = () => {
 }
 
 .extra-btn {
-  background: rgba(102, 126, 234, 0.6);
+  background: var(--primary-color);
   border: none;
-  color: white;
+  color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -1354,7 +1354,7 @@ const toggleFullscreenPlayer = () => {
 }
 
 .extra-btn:hover {
-  background: rgba(102, 126, 234, 0.8);
+  background: var(--primary-hover-color);
   transform: scale(1.05);
   cursor: pointer;
 }
@@ -1403,8 +1403,8 @@ const toggleFullscreenPlayer = () => {
   bottom: 100%;
   right: 0;
   margin-bottom: 8px;
-  background: rgba(20, 20, 20, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 4px;
   min-width: 140px;
@@ -1422,7 +1422,7 @@ const toggleFullscreenPlayer = () => {
   padding: 10px 12px;
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
   border-radius: 4px;
@@ -1432,7 +1432,7 @@ const toggleFullscreenPlayer = () => {
 }
 
 .menu-item:hover {
-  background: rgba(102, 126, 234, 0.6);
+  background: var(--primary-color);
 }
 
 .menu-item span {
@@ -1474,16 +1474,16 @@ const toggleFullscreenPlayer = () => {
 }
 
 .playlist-content {
-  background: rgba(30, 30, 30, 0.98);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   border-radius: 12px 0 0 0;
   width: 420px;
   max-height: 500px;
   display: flex;
   flex-direction: column;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   border-bottom: none;
   border-right: none;
   pointer-events: auto;
@@ -1495,7 +1495,7 @@ const toggleFullscreenPlayer = () => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .playlist-header h3 {
@@ -1510,9 +1510,9 @@ const toggleFullscreenPlayer = () => {
 }
 
 .clear-btn {
-  background: rgba(102, 126, 234, 0.6);
+  background: var(--primary-color);
   border: none;
-  color: white;
+  color: var(--text-primary);
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -1521,7 +1521,7 @@ const toggleFullscreenPlayer = () => {
 }
 
 .clear-btn:hover {
-  background: rgba(102, 126, 234, 0.9);
+  background: var(--primary-hover-color);
   transform: translateY(-1px);
 }
 
@@ -1531,9 +1531,9 @@ const toggleFullscreenPlayer = () => {
 }
 
 .mode-btn {
-  background: rgba(102, 126, 234, 0.6);
+  background: var(--primary-color);
   border: none;
-  color: white;
+  color: var(--text-primary);
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -1546,7 +1546,7 @@ const toggleFullscreenPlayer = () => {
 }
 
 .mode-btn:hover {
-  background: rgba(102, 126, 234, 0.9);
+  background: var(--primary-hover-color);
   transform: scale(1.05);
 }
 
@@ -1574,16 +1574,16 @@ const toggleFullscreenPlayer = () => {
 }
 
 .playlist-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--button-bg);
 }
 
 .playlist-item.active {
-  background: rgba(102, 126, 234, 0.3);
+  background: var(--primary-color);
 }
 
 .song-index {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   min-width: 25px;
   text-align: center;
 }
@@ -1625,7 +1625,7 @@ const toggleFullscreenPlayer = () => {
 
 .song-artist-item {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1636,9 +1636,9 @@ const toggleFullscreenPlayer = () => {
 }
 
 .more-btn {
-  background: rgba(102, 126, 234, 0.5);
+  background: var(--primary-color);
   border: none;
-  color: white;
+  color: var(--text-primary);
   width: 32px;
   height: 32px;
   border-radius: 4px;
@@ -1653,7 +1653,7 @@ const toggleFullscreenPlayer = () => {
 }
 
 .more-btn:hover {
-  background: rgba(102, 126, 234, 0.8);
+  background: var(--primary-hover-color);
   transform: scale(1.05);
 }
 
@@ -1662,8 +1662,8 @@ const toggleFullscreenPlayer = () => {
   right: 0;
   top: 100%;
   margin-top: 4px;
-  background: rgba(20, 20, 20, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 4px;
   min-width: 120px;
@@ -1679,7 +1679,7 @@ const toggleFullscreenPlayer = () => {
   padding: 8px 12px;
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
   border-radius: 4px;
@@ -1688,7 +1688,7 @@ const toggleFullscreenPlayer = () => {
 }
 
 .action-item:hover:not(:disabled) {
-  background: rgba(102, 126, 234, 0.6);
+  background: var(--primary-color);
 }
 
 .action-item:disabled {
@@ -1703,7 +1703,7 @@ const toggleFullscreenPlayer = () => {
 .empty-playlist {
   text-align: center;
   padding: 40px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 </style>

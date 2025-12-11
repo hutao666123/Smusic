@@ -1,4 +1,5 @@
 <template>
+  <!--  歌单界面-->
   <div class="album-page">
     <div v-if="loading" class="loading">加载中...</div>
     <div v-else-if="album" class="album-content">
@@ -482,8 +483,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .album-page {
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
-  color: white;
 }
 
 .loading {

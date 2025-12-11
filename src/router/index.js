@@ -2,10 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from '../pages/Home.vue'
 import Search from '../pages/Search.vue'
 import Playlist from '../pages/Playlist.vue'
-import Debug from '../pages/Debug.vue'
-import Login from '../pages/Login.vue'
 import Discover from '../pages/Discover.vue'
-import Profile from '../pages/Profile.vue'
 import SongDetail from '../pages/SongDetail.vue'
 import Lyrics from '../pages/Lyrics.vue'
 import Player from '../pages/Player.vue'
@@ -15,6 +12,7 @@ import Album from '../pages/Album.vue'
 import MyPlaylists from '../pages/MyPlaylists.vue'
 import CollectedPlaylists from '../pages/CollectedPlaylists.vue'
 import LocalPlaylist from '../pages/LocalPlaylist.vue'
+import Settings from '../pages/Settings.vue'
 
 const routes = [
   {
@@ -36,21 +34,6 @@ const routes = [
     path: '/discover',
     name: 'Discover',
     component: Discover
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: Profile
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login
-  },
-  {
-    path: '/debug',
-    name: 'Debug',
-    component: Debug
   },
   {
     path: '/song/:id',
@@ -96,6 +79,11 @@ const routes = [
     path: '/local-playlist/:id',
     name: 'LocalPlaylist',
     component: LocalPlaylist
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings
   }
 ]
 

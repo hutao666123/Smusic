@@ -81,6 +81,11 @@
               <span v-else>{{ index + 1 }}</span>
             </span>
             
+            <div class="song-cover">
+              <img v-if="song.album?.picUrl" :src="song.album.picUrl" :alt="song.name" />
+              <div v-else class="no-cover">🎵</div>
+            </div>
+            
             <div class="song-details">
               <div class="song-name">
                 {{ song.name }}
@@ -682,7 +687,9 @@ const createFavoriteAnimation = (event) => {
 
 <style scoped>
 .local-playlist {
-  color: white;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
   padding-bottom: 100px;
   max-width: 1400px;
@@ -804,7 +811,7 @@ const createFavoriteAnimation = (event) => {
 
 .playlist-desc {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.6;
   font-size: 14px;
   max-height: 90px;
@@ -826,7 +833,7 @@ const createFavoriteAnimation = (event) => {
   align-items: center;
   gap: 6px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .meta-icon {
@@ -894,7 +901,7 @@ const createFavoriteAnimation = (event) => {
 .songs-header {
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .songs-header h3 {
@@ -910,9 +917,9 @@ const createFavoriteAnimation = (event) => {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
   border-radius: 12px;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed var(--border-color);
 }
 
 .empty-icon {
@@ -923,7 +930,7 @@ const createFavoriteAnimation = (event) => {
 
 .empty-text {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -940,7 +947,7 @@ const createFavoriteAnimation = (event) => {
   align-items: center;
   gap: 15px;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -962,13 +969,13 @@ const createFavoriteAnimation = (event) => {
   flex: 0 0 35px;
   text-align: center;
   font-weight: bold;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 15px;
 }
 
 .song-item:hover .song-index,
 .song-item.is-playing .song-index {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .playing-indicator {
@@ -983,6 +990,29 @@ const createFavoriteAnimation = (event) => {
   50% {
     opacity: 0.5;
   }
+}
+
+.song-cover {
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--button-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.song-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-cover {
+  font-size: 20px;
+  opacity: 0.5;
 }
 
 .song-details {
@@ -1009,7 +1039,7 @@ const createFavoriteAnimation = (event) => {
 
 .song-artist {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1019,7 +1049,7 @@ const createFavoriteAnimation = (event) => {
   flex: 0 0 50px;
   text-align: right;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
 }
 
 /* 歌曲操作按钮 */
@@ -1126,12 +1156,12 @@ const createFavoriteAnimation = (event) => {
 }
 
 .dialog {
-  background: linear-gradient(135deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 16px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .dialog-header {
@@ -1139,7 +1169,7 @@ const createFavoriteAnimation = (event) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
@@ -1168,7 +1198,7 @@ const createFavoriteAnimation = (event) => {
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-cancel,
@@ -1183,12 +1213,12 @@ const createFavoriteAnimation = (event) => {
 }
 
 .btn-cancel {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .btn-danger {
@@ -1260,7 +1290,7 @@ const createFavoriteAnimation = (event) => {
 .loading-more .loading-spinner {
   width: 30px;
   height: 30px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1272,7 +1302,7 @@ const createFavoriteAnimation = (event) => {
 
 .loading-more p {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
 }
 

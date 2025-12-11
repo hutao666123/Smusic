@@ -128,12 +128,12 @@ const handleClose = () => {
 }
 
 .dialog {
-  background: linear-gradient(135deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 16px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -153,14 +153,14 @@ const handleClose = () => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: white;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -168,8 +168,8 @@ const handleClose = () => {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
   font-size: 24px;
   cursor: pointer;
   transition: all 0.3s;
@@ -180,7 +180,7 @@ const handleClose = () => {
 }
 
 .close-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
   transform: rotate(90deg);
 }
 
@@ -191,7 +191,7 @@ const handleClose = () => {
 
 .dialog-body {
   padding: 24px;
-  color: white;
+  color: var(--text-primary);
 }
 
 .progress-summary {
@@ -209,12 +209,12 @@ const handleClose = () => {
 }
 
 .summary-item .label {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .summary-item .value {
   font-weight: 600;
-  color: white;
+  color: var(--text-primary);
 }
 
 .summary-item.success .value {
@@ -232,7 +232,7 @@ const handleClose = () => {
 .progress-bar {
   width: 100%;
   height: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-color);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -249,14 +249,14 @@ const handleClose = () => {
 .progress-text {
   text-align: center;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .status-text {
   text-align: center;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin-top: 12px;
 }
 
@@ -264,7 +264,7 @@ const handleClose = () => {
   display: flex;
   justify-content: flex-end;
   padding: 20px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-primary {
@@ -275,8 +275,8 @@ const handleClose = () => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
+  background: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .btn-primary:hover:not(:disabled) {

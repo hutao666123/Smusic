@@ -58,6 +58,10 @@
             @contextmenu.prevent="showContextMenu($event, song)"
           >
             <span class="song-index">{{ index + 1 }}</span>
+            <div class="song-cover">
+              <img v-if="song.al?.picUrl" :src="song.al.picUrl" :alt="song.name" />
+              <div v-else class="no-cover">🎵</div>
+            </div>
             <div class="song-details">
               <div class="song-name">{{ song.name }}</div>
               <div class="song-artist">
@@ -799,7 +803,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .playlist {
-  color: white;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
@@ -842,7 +848,7 @@ onBeforeUnmount(() => {
   flex: 0 0 220px;
   width: 220px;
   height: 220px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--button-bg);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -877,7 +883,7 @@ onBeforeUnmount(() => {
 
 .playlist-desc {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.6;
   font-size: 14px;
   max-height: 90px;
@@ -899,7 +905,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .meta-icon {
@@ -939,7 +945,7 @@ onBeforeUnmount(() => {
 .songs-header {
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .songs-header h3 {
@@ -960,7 +966,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 15px;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -978,12 +984,35 @@ onBeforeUnmount(() => {
   flex: 0 0 35px;
   text-align: center;
   font-weight: bold;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-size: 15px;
 }
 
 .song-item:hover .song-index {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+}
+
+.song-cover {
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--button-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.song-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-cover {
+  font-size: 20px;
+  opacity: 0.5;
 }
 
 .song-details {
@@ -1002,7 +1031,7 @@ onBeforeUnmount(() => {
 
 .song-artist {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1012,7 +1041,7 @@ onBeforeUnmount(() => {
   flex: 0 0 50px;
   text-align: right;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
 }
 
 /* 操作按钮组 */
@@ -1268,12 +1297,12 @@ onBeforeUnmount(() => {
 /* 右键菜单 */
 .context-menu {
   position: fixed;
-  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 8px 0;
   min-width: 180px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   z-index: 3000;
   animation: contextMenuIn 0.2s ease-out;
 }
@@ -1296,7 +1325,7 @@ onBeforeUnmount(() => {
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.2s;
-  color: white;
+  color: var(--text-primary);
   font-size: 14px;
 }
 

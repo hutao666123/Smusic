@@ -1,8 +1,5 @@
 <template>
   <div class="collected-playlists">
-    <div class="page-header">
-      <h1 class="page-title">收藏的歌单</h1>
-    </div>
 
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
@@ -263,7 +260,8 @@ const showToast = (message, type = 'success') => {
 <style scoped>
 .collected-playlists {
   min-height: 100vh;
-  color: white;
+  background: var(--page-bg);
+  color: var(--text-primary);
   padding: 20px;
   padding-bottom: 100px;
   max-width: 1400px;
@@ -298,7 +296,7 @@ const showToast = (message, type = 'success') => {
 .loading-spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  border: 4px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -310,7 +308,7 @@ const showToast = (message, type = 'success') => {
 
 .loading-state p {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 /* 空状态 */
@@ -320,9 +318,9 @@ const showToast = (message, type = 'success') => {
   align-items: center;
   justify-content: center;
   padding: 80px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
   border-radius: 12px;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed var(--border-color);
 }
 
 .empty-icon {
@@ -333,13 +331,13 @@ const showToast = (message, type = 'success') => {
 
 .empty-text {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin: 0 0 10px 0;
 }
 
 .empty-hint {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin: 0;
 }
 
@@ -510,7 +508,7 @@ const showToast = (message, type = 'success') => {
 
 .playlist-meta {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -528,7 +526,7 @@ const showToast = (message, type = 'success') => {
   padding: 2px 8px;
   background: rgba(102, 126, 234, 0.3);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 /* 对话框 */
@@ -547,12 +545,12 @@ const showToast = (message, type = 'success') => {
 }
 
 .dialog {
-  background: linear-gradient(135deg, #2a2a3e 0%, #1a1a2e 100%);
+  background: var(--card-bg);
   border-radius: 16px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .dialog-header {
@@ -560,7 +558,7 @@ const showToast = (message, type = 'success') => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
@@ -574,8 +572,8 @@ const showToast = (message, type = 'success') => {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,7 +582,7 @@ const showToast = (message, type = 'success') => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .close-btn svg {
@@ -604,7 +602,7 @@ const showToast = (message, type = 'success') => {
 
 .dialog-hint {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 20px !important;
   text-align: left !important;
 }
@@ -614,7 +612,7 @@ const showToast = (message, type = 'success') => {
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-cancel,
@@ -629,12 +627,12 @@ const showToast = (message, type = 'success') => {
 }
 
 .btn-cancel {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
 }
 
 .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-hover-bg);
 }
 
 .btn-danger {
@@ -665,7 +663,7 @@ const showToast = (message, type = 'success') => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--button-bg);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
@@ -683,7 +681,7 @@ const showToast = (message, type = 'success') => {
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--button-bg);
   border-radius: 8px;
 }
 
@@ -703,12 +701,12 @@ const showToast = (message, type = 'success') => {
 
 .playlist-item-count {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .playlist-item-arrow {
   font-size: 24px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 /* Toast 提示 */

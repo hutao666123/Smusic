@@ -11,11 +11,19 @@
 </template>
 
 <script setup>
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, onMounted } from 'vue'
 import { useMessage, useDialog, useNotification } from 'naive-ui'
 import { setupNotification } from './utils/notification'
+import { useThemeStore } from './stores/theme'
 import AppContentWrapper from './components/AppContentWrapper.vue'
 import './styles/theme.css'
+
+const themeStore = useThemeStore()
+
+onMounted(() => {
+  // 初始化主题
+  themeStore.initTheme()
+})
 </script>
 
 <style>

@@ -1,4 +1,5 @@
 <template>
+  <!--播放界面-->
   <div class="song-detail">
     <!-- 动态背景 -->
     <div class="animated-bg">

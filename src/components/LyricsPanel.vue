@@ -179,8 +179,8 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--button-bg);
 }
 
 .lyrics-header h3 {
@@ -190,9 +190,9 @@ defineExpose({
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--button-bg);
   border: none;
-  color: white;
+  color: var(--text-primary);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -205,7 +205,7 @@ defineExpose({
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--button-hover-bg);
 }
 
 .lyrics-content {
@@ -221,7 +221,7 @@ defineExpose({
   justify-content: center;
   height: 100%;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .lyrics-text {
@@ -233,15 +233,15 @@ defineExpose({
 .lyric-line {
   padding: 8px 12px;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   transition: all 0.3s;
   font-size: 14px;
   line-height: 1.6;
 }
 
 .lyric-line.active {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--button-bg);
+  color: var(--text-primary);
   font-weight: 500;
   transform: scale(1.05);
 }
