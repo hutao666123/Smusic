@@ -1,0 +1,132 @@
+/* 主题色全局样式 - 替换硬编码的颜色 */
+
+/* 使用自定义主题色的通用类 */
+.accent-bg {
+  background: var(--accent-color) !important;
+}
+
+.accent-gradient {
+  background: var(--accent-gradient) !important;
+}
+
+.accent-text {
+  color: var(--accent-color) !important;
+}
+
+.accent-border {
+  border-color: var(--accent-color) !important;
+}
+
+/* 进度条 */
+.progress-fill,
+[class*="progress"] .fill {
+  background: var(--accent-color) !important;
+}
+
+/* 滑块 */
+input[type="range"]::-webkit-slider-thumb {
+  background: var(--accent-color) !important;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background: var(--accent-color) !important;
+}
+
+/* 加载动画 */
+.loading-spinner,
+[class*="spinner"],
+[class*="loading"] {
+  border-top-color: var(--accent-color) !important;
+}
+
+/* 激活状态 */
+.active-indicator,
+.playing-indicator,
+[class*="active"].stat-value {
+  color: var(--accent-color) !important;
+}
+
+/* 按钮 */
+.primary-button,
+.play-all-btn,
+.search-btn,
+.load-more-btn,
+.btn-confirm,
+[class*="add-btn"] {
+  background: var(--accent-gradient) !important;
+}
+
+/* 徽章 */
+.badge-downloading,
+[class*="badge"].downloading {
+  background: rgba(var(--accent-color-rgb), 0.2) !important;
+  color: var(--accent-color) !important;
+}
+
+/* Logo文字渐变 */
+.logo-text,
+[class*="logo"] .text {
+  background: var(--accent-gradient) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* 自定义封面 */
+.custom-cover {
+  background: var(--accent-gradient) !important;
+}
+
+/* 焦点边框 */
+input:focus,
+textarea:focus,
+[class*="form"] input:focus,
+[class*="form"] textarea:focus {
+  border-color: var(--accent-color) !important;
+}
+
+/* 歌词激活状态 */
+.lyric-line.active {
+  color: var(--accent-color) !important;
+  background: rgba(var(--accent-color-rgb), 0.2) !important;
+}
+
+/* 播放器图标 */
+.player-icon {
+  background: var(--accent-gradient) !important;
+}
+
+/* 悬停效果 */
+.chart-add-btn:hover {
+  background: var(--accent-gradient) !important;
+}
+
+/* 进度条特殊样式 */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to top, 
+    var(--accent-color) 0%, 
+    var(--accent-color) var(--value, 0%), 
+    rgba(255, 255, 255, 0.15) var(--value, 0%), 
+    rgba(255, 255, 255, 0.15) 100%
+  ) !important;
+}
+
+input[type="range"]::-moz-range-progress {
+  background: var(--accent-color) !important;
+}
+
+/* 音量滑块 */
+.volume-input::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to top, 
+    var(--accent-color) 0%, 
+    var(--accent-color) var(--value, 0%), 
+    rgba(255, 255, 255, 0.15) var(--value, 0%), 
+    rgba(255, 255, 255, 0.15) 100%
+  ) !important;
+}
+
+.volume-input::-moz-range-progress {
+  background: var(--accent-color) !important;
+}

@@ -44,6 +44,217 @@
             </button>
           </div>
         </div>
+
+        <div class="setting-item-vertical">
+          <div class="setting-header">
+            <div class="setting-label">
+              <span class="label-text">主题色</span>
+              <span class="label-desc">自定义按钮、选中效果等的颜色</span>
+            </div>
+            <button 
+              class="reset-btn-top"
+              :class="{ active: !themeStore.customAccentColor }"
+              title="重置为主题默认"
+              @click="themeStore.setCustomAccentColor(null)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+              </svg>
+              <span>重置</span>
+            </button>
+          </div>
+          
+          <div class="color-row">
+            <!-- 颜色选择器 -->
+            <div class="color-picker-section">
+              <div class="color-picker-wrapper">
+                <input 
+                  type="color" 
+                  v-model="accentColorPicker"
+                  @change="handleAccentPickerChange"
+                  class="color-picker"
+                  title="选择任意颜色"
+                />
+                <span class="picker-label">颜色选择器</span>
+              </div>
+            </div>
+
+            <!-- 自定义输入 -->
+            <div class="custom-input-section">
+              <div class="custom-input-wrapper">
+                <input 
+                  type="text" 
+                  v-model="customAccentInput"
+                  placeholder="如: #667eea 或 rgb(102,126,234) 或 linear-gradient(...)"
+                  class="custom-input"
+                  @keyup.enter="applyCustomAccent"
+                />
+                <button @click="applyCustomAccent" class="apply-btn">应用</button>
+              </div>
+              <span v-if="accentInputError" class="error-msg">{{ accentInputError }}</span>
+              <span class="hint-text">支持: hex、rgb、rgba、linear-gradient</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-item-vertical">
+          <div class="setting-header">
+            <div class="setting-label">
+              <span class="label-text">字体颜色</span>
+              <span class="label-desc">自定义文字颜色</span>
+            </div>
+            <button 
+              class="reset-btn-top"
+              :class="{ active: !themeStore.customTextColor }"
+              title="重置为主题默认"
+              @click="themeStore.setCustomTextColor(null)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+              </svg>
+              <span>重置</span>
+            </button>
+          </div>
+          
+          <div class="color-row">
+            <!-- 颜色选择器 -->
+            <div class="color-picker-section">
+              <div class="color-picker-wrapper">
+                <input 
+                  type="color" 
+                  v-model="textColorPicker"
+                  @change="handleTextPickerChange"
+                  class="color-picker"
+                  title="选择任意颜色"
+                />
+                <span class="picker-label">颜色选择器</span>
+              </div>
+            </div>
+
+            <!-- 自定义输入 -->
+            <div class="custom-input-section">
+              <div class="custom-input-wrapper">
+                <input 
+                  type="text" 
+                  v-model="customTextInput"
+                  placeholder="如: #ffffff 或 rgb(255,255,255)"
+                  class="custom-input"
+                  @keyup.enter="applyCustomText"
+                />
+                <button @click="applyCustomText" class="apply-btn">应用</button>
+              </div>
+              <span v-if="textInputError" class="error-msg">{{ textInputError }}</span>
+              <span class="hint-text">支持: hex、rgb、rgba</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 播放页面和专注模式视觉 -->
+      <div class="settings-section">
+        <h2 class="section-title">播放视觉</h2>
+        <div class="setting-item-vertical">
+          <div class="setting-label">
+            <span class="label-text">视觉主题</span>
+            <span class="label-desc">选择播放页面和专注模式的背景和效果风格</span>
+          </div>
+          <div class="visual-theme-grid">
+            <div
+              v-for="(theme, key) in visualThemes"
+              :key="key"
+              class="visual-theme-card"
+              :class="{ active: themeStore.playbackVisualTheme === key }"
+              @click="themeStore.setPlaybackVisualTheme(key)"
+            >
+              <div class="theme-preview" :style="getThemePreviewStyle(theme)">
+                <div class="preview-text" :style="{ background: theme.textColors.songTitle }">
+                  歌曲名
+                </div>
+              </div>
+              <div class="theme-info">
+                <div class="theme-name">{{ theme.name }}</div>
+                <div class="theme-desc">{{ theme.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 桌面歌词设置 -->
+      <div class="settings-section">
+        <h2 class="section-title">桌面歌词</h2>
+        
+        <div class="setting-item-vertical">
+          <div class="setting-header">
+            <div class="setting-label">
+              <span class="label-text">歌词颜色</span>
+              <span class="label-desc">自定义桌面歌词的颜色</span>
+            </div>
+            <button 
+              class="reset-btn-top"
+              :class="{ active: !themeStore.desktopLyricColor }"
+              title="重置为默认"
+              @click="themeStore.setDesktopLyricColor(null)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+              </svg>
+              <span>重置</span>
+            </button>
+          </div>
+          
+          <div class="color-row">
+            <!-- 颜色选择器 -->
+            <div class="color-picker-section">
+              <div class="color-picker-wrapper">
+                <input 
+                  type="color" 
+                  v-model="lyricColorPicker"
+                  @change="handleLyricPickerChange"
+                  class="color-picker"
+                  title="选择任意颜色"
+                />
+                <span class="picker-label">颜色选择器</span>
+              </div>
+            </div>
+
+            <!-- 自定义输入 -->
+            <div class="custom-input-section">
+              <div class="custom-input-wrapper">
+                <input 
+                  type="text" 
+                  v-model="customLyricInput"
+                  placeholder="如: #00ffcc 或 rgb(0,255,204)"
+                  class="custom-input"
+                  @keyup.enter="applyCustomLyric"
+                />
+                <button @click="applyCustomLyric" class="apply-btn">应用</button>
+              </div>
+              <span v-if="lyricInputError" class="error-msg">{{ lyricInputError }}</span>
+              <span class="hint-text">支持: hex、rgb、rgba</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="label-text">歌词大小</span>
+            <span class="label-desc">调整桌面歌词的整体大小</span>
+          </div>
+          <div class="size-control">
+            <input 
+              type="range" 
+              min="0.5" 
+              max="2.0" 
+              step="0.1" 
+              v-model.number="lyricSize"
+              @input="handleLyricSizeChange"
+              class="size-slider"
+              :style="{ '--slider-progress': ((lyricSize - 0.5) / 1.5 * 100) + '%' }"
+            />
+            <span class="size-value">{{ Math.round(lyricSize * 100) }}%</span>
+          </div>
+        </div>
       </div>
 
       <!-- 其他设置可以后续添加 -->
@@ -61,9 +272,183 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import { useThemeStore } from '../stores/theme'
 
 const themeStore = useThemeStore()
+
+// 视觉主题
+const visualThemes = computed(() => themeStore.visualThemes)
+
+// 获取主题预览样式
+const getThemePreviewStyle = (theme) => {
+  const colors = theme.bgColors
+  return {
+    background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]}, ${colors[2]})`
+  }
+}
+
+// 主题色预设
+const accentColorPresets = [
+  { name: '紫色', value: '#667eea' },
+  { name: '蓝色', value: '#4488ff' },
+  { name: '青色', value: '#00bcd4' },
+  { name: '绿色', value: '#4caf50' },
+  { name: '橙色', value: '#ff9800' },
+  { name: '红色', value: '#f44336' },
+  { name: '粉色', value: '#e91e63' },
+  { name: '深紫', value: '#9c27b0' },
+  { name: '靛蓝', value: '#3f51b5' },
+  { name: '深青', value: '#009688' },
+  { name: '黄绿', value: '#8bc34a' },
+  { name: '琥珀', value: '#ffc107' },
+  { name: '深橙', value: '#ff5722' },
+  { name: '棕色', value: '#795548' },
+  { name: '灰色', value: '#607d8b' }
+]
+
+// 字体颜色预设
+const colorPresets = [
+  { name: '白色', value: '#ffffff' },
+  { name: '浅灰', value: '#e6e6e6' },
+  { name: '灰色', value: '#999999' },
+  { name: '深灰', value: '#666666' },
+  { name: '黑色', value: '#000000' },
+  { name: '红色', value: '#ff4444' },
+  { name: '橙色', value: '#ff9944' },
+  { name: '黄色', value: '#ffdd44' },
+  { name: '绿色', value: '#44ff88' },
+  { name: '青色', value: '#44ddff' },
+  { name: '蓝色', value: '#4488ff' },
+  { name: '紫色', value: '#aa44ff' },
+  { name: '粉色', value: '#ff44aa' },
+  { name: '金色', value: '#ffd700' },
+  { name: '银色', value: '#c0c0c0' }
+]
+
+const accentInputError = ref('')
+const textInputError = ref('')
+
+// 颜色选择器值 - 从 store 读取当前值
+const accentColorPicker = ref(themeStore.customAccentColor || '#667eea')
+const textColorPicker = ref(themeStore.customTextColor || '#ffffff')
+const lyricColorPicker = ref(themeStore.desktopLyricColor || '#00ffcc')
+
+// 桌面歌词自定义输入
+const customLyricInput = ref(themeStore.desktopLyricColor || '')
+const lyricInputError = ref('')
+
+// 桌面歌词大小
+const lyricSize = ref(themeStore.desktopLyricSize || 1.0)
+
+// 初始化自定义输入框的值
+const customAccentInput = ref(themeStore.customAccentColor || '')
+const customTextInput = ref(themeStore.customTextColor || '')
+
+// 处理主题色选择器变化
+const handleAccentPickerChange = (event) => {
+  const color = event.target.value
+  themeStore.setCustomAccentColor(color)
+  customAccentInput.value = color
+  accentInputError.value = ''
+}
+
+// 处理字体颜色选择器变化
+const handleTextPickerChange = (event) => {
+  const color = event.target.value
+  themeStore.setCustomTextColor(color)
+  customTextInput.value = color
+  textInputError.value = ''
+}
+
+// 验证并应用自定义主题色
+const applyCustomAccent = () => {
+  const input = customAccentInput.value.trim()
+  if (!input) {
+    accentInputError.value = '请输入颜色值'
+    return
+  }
+  
+  // 验证颜色格式
+  if (isValidColor(input)) {
+    themeStore.setCustomAccentColor(input)
+    accentInputError.value = ''
+  } else {
+    accentInputError.value = '无效的颜色格式'
+  }
+}
+
+// 验证并应用自定义字体颜色
+const applyCustomText = () => {
+  const input = customTextInput.value.trim()
+  if (!input) {
+    textInputError.value = '请输入颜色值'
+    return
+  }
+  
+  if (isValidColor(input)) {
+    themeStore.setCustomTextColor(input)
+    textInputError.value = ''
+  } else {
+    textInputError.value = '无效的颜色格式'
+  }
+}
+
+// 处理桌面歌词颜色选择器变化
+const handleLyricPickerChange = (event) => {
+  const color = event.target.value
+  console.log('设置桌面歌词颜色:', color)
+  themeStore.setDesktopLyricColor(color)
+  console.log('保存后 localStorage:', localStorage.getItem('desktop-lyric-color'))
+  console.log('保存后 store:', themeStore.desktopLyricColor)
+  customLyricInput.value = color
+  lyricInputError.value = ''
+  // 关闭桌面歌词窗口
+  window.electron.closeDesktopLyric()
+}
+
+// 验证并应用自定义桌面歌词颜色
+const applyCustomLyric = () => {
+  const input = customLyricInput.value.trim()
+  if (!input) {
+    lyricInputError.value = '请输入颜色值'
+    return
+  }
+  
+  if (isValidColor(input)) {
+    themeStore.setDesktopLyricColor(input)
+    lyricInputError.value = ''
+    // 关闭桌面歌词窗口
+    window.electron.closeDesktopLyric()
+  } else {
+    lyricInputError.value = '无效的颜色格式'
+  }
+}
+
+// 处理桌面歌词大小变化
+const handleLyricSizeChange = (event) => {
+  const size = parseFloat(event.target.value)
+  console.log('设置桌面歌词大小:', size)
+  themeStore.setDesktopLyricSize(size)
+  console.log('保存后 localStorage:', localStorage.getItem('desktop-lyric-size'))
+  console.log('保存后 store:', themeStore.desktopLyricSize)
+  // 关闭桌面歌词窗口
+  window.electron.closeDesktopLyric()
+}
+
+// 验证颜色格式
+const isValidColor = (color) => {
+  // 支持 hex, rgb, rgba, linear-gradient
+  const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+  const rgbPattern = /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/
+  const rgbaPattern = /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/
+  const gradientPattern = /^linear-gradient\(/
+  
+  return hexPattern.test(color) || 
+         rgbPattern.test(color) || 
+         rgbaPattern.test(color) || 
+         gradientPattern.test(color)
+}
 </script>
 
 <style scoped>
@@ -108,10 +493,30 @@ const themeStore = useThemeStore()
   padding: 16px 0;
 }
 
+.setting-item-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.setting-item-vertical:last-child {
+  border-bottom: none;
+}
+
+.setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .setting-label {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
 }
 
 .label-text {
@@ -163,5 +568,379 @@ const themeStore = useThemeStore()
 .theme-option span {
   font-size: 14px;
   font-weight: 500;
+}
+
+.color-options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 400px;
+}
+
+.color-preset {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.color-preset:hover {
+  transform: scale(1.1);
+  border-color: var(--primary-color);
+}
+
+.color-preset.active {
+  border-color: var(--primary-color);
+  border-width: 3px;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.color-preset.reset {
+  background: linear-gradient(135deg, 
+    #ff0000 0%, #ff7f00 16.67%, #ffff00 33.33%, 
+    #00ff00 50%, #0000ff 66.67%, #4b0082 83.33%, #9400d3 100%);
+  position: relative;
+}
+
+.color-preset.reset::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: var(--card-bg);
+  border-radius: 6px;
+}
+
+.color-preset.reset svg {
+  position: relative;
+  z-index: 1;
+}
+
+.color-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.color-picker-section {
+  flex: 0 0 30%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.custom-input-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-picker {
+  width: 60px;
+  height: 40px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.color-picker:hover {
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.picker-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--button-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reset-btn:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.reset-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.reset-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reset-btn-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--button-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reset-btn-top:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.reset-btn-top.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.reset-btn-top svg {
+  width: 16px;
+  height: 16px;
+}
+
+.custom-input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.custom-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.custom-input:focus {
+  outline: none;
+  background: var(--input-focus-bg);
+  border-color: var(--primary-color);
+}
+
+.custom-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.apply-btn {
+  padding: 10px 20px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.apply-btn:hover {
+  background: var(--primary-hover-color);
+  transform: translateY(-1px);
+}
+
+.apply-btn:active {
+  transform: translateY(0);
+}
+
+.error-msg {
+  font-size: 12px;
+  color: #ff4444;
+  margin-top: -4px;
+}
+
+.hint-text {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.size-control {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.size-slider {
+  flex: 1;
+  max-width: 200px;
+  height: 8px;
+  background: linear-gradient(to right, 
+    #00ffcc 0%, 
+    #00d4aa var(--slider-progress, 50%), 
+    var(--input-bg) var(--slider-progress, 50%), 
+    var(--input-bg) 100%);
+  border-radius: 4px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.size-slider:hover {
+  height: 10px;
+}
+
+.size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #00ffcc, #00d4aa);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 255, 204, 0.3);
+}
+
+.size-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 4px 16px rgba(0, 255, 204, 0.6);
+}
+
+.size-slider::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+.size-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #00ffcc, #00d4aa);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 255, 204, 0.3);
+}
+
+.size-slider::-moz-range-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 4px 16px rgba(0, 255, 204, 0.6);
+}
+
+.size-slider::-moz-range-thumb:active {
+  transform: scale(1.1);
+}
+
+.size-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.size-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: right;
+}
+
+/* 视觉主题网格 */
+.visual-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.visual-theme-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.visual-theme-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.visual-theme-card.active {
+  border-color: var(--primary-color);
+  border-width: 3px;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.theme-preview {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-text {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+}
+
+.theme-info {
+  padding: 12px;
+  background: var(--button-bg);
+}
+
+.theme-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.theme-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

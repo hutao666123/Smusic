@@ -53,8 +53,8 @@
 
     <div class="player-progress">
       <span class="time">{{ formatTime(currentTime) }}</span>
-      <div class="progress-bar">
-        <div class="progress" :style="{ width: progressPercent + '%' }"></div>
+      <div class="progress-bar" :style="progressBarBgStyle">
+        <div class="progress" :style="progressFillStyle"></div>
         <input
           type="range"
           min="0"
@@ -62,6 +62,7 @@
           :value="currentTime"
           @input="handleProgressChange"
           class="progress-input"
+          :style="progressThumbStyle"
         />
       </div>
       <span class="time">{{ formatTime(duration) }}</span>
@@ -220,12 +221,14 @@ import { computed, onMounted, watch, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { usePlaylistStore } from '../stores/playlist'
+import { useThemeStore } from '../stores/theme'
 import { getSongDetail } from '../api/music'
 import audioPlayer from '../services/audioPlayer'
 import AddToPlaylistDialog from './AddToPlaylistDialog.vue'
 import PlayModeIcon from './PlayModeIcon.vue'
 
 const router = useRouter()
+const themeStore = useThemeStore()
 const playerStore = usePlayerStore()
 const playlistStore = usePlaylistStore()
 
@@ -267,6 +270,35 @@ const playModeText = computed(() => {
 
 const progressPercent = computed(() => {
   return duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0
+})
+
+// 视觉主题相关样式
+const visualTheme = computed(() => themeStore.currentVisualTheme)
+
+const progressBarBgStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  return {
+    background: visualTheme.value.progressBar.bg
+  }
+})
+
+const progressFillStyle = computed(() => {
+  if (!visualTheme.value) return { width: progressPercent.value + '%' }
+  const fill = visualTheme.value.progressBar.fill
+  return {
+    width: progressPercent.value + '%',
+    background: fill,
+    boxShadow: `0 0 8px ${visualTheme.value.vinylGlow}`
+  }
+})
+
+const progressThumbStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  const thumb = visualTheme.value.progressBar.thumb
+  return {
+    '--thumb-color': thumb,
+    '--thumb-glow': visualTheme.value.vinylGlow
+  }
 })
 
 onMounted(() => {
@@ -1143,15 +1175,13 @@ const toggleFullscreenPlayer = () => {
 .progress {
   position: absolute;
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
   border-radius: 3px;
   pointer-events: none;
-  box-shadow: 0 0 8px rgba(102, 126, 234, 0.6);
   transition: box-shadow 0.2s ease;
 }
 
 .progress-bar:hover .progress {
-  box-shadow: 0 0 12px rgba(102, 126, 234, 0.8);
+  filter: brightness(1.2);
 }
 
 .progress-input {
@@ -1171,17 +1201,17 @@ const toggleFullscreenPlayer = () => {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--thumb-color, #667eea);
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 2px 8px var(--thumb-glow, rgba(102, 126, 234, 0.5));
   transition: all 0.2s ease;
   margin-top: -4px;
 }
 
 .progress-input::-webkit-slider-thumb:hover {
   transform: scale(1.3);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.8);
+  box-shadow: 0 4px 12px var(--thumb-glow, rgba(102, 126, 234, 0.8));
   border-color: rgba(255, 255, 255, 0.8);
 }
 
@@ -1189,10 +1219,10 @@ const toggleFullscreenPlayer = () => {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--thumb-color, #667eea);
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 2px 8px var(--thumb-glow, rgba(102, 126, 234, 0.5));
   transition: all 0.2s ease;
 }
 

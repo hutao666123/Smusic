@@ -67,15 +67,33 @@ function createWindow() {
 }
 
 // 创建桌面歌词窗口
-function createDesktopLyricWindow() {
+async function createDesktopLyricWindow() {
   if (desktopLyricWindow) {
     desktopLyricWindow.focus()
     return
   }
 
+  // 从主窗口的 localStorage 读取大小设置
+  let lyricSize = 1.0
+  if (mainWindow && mainWindow.webContents) {
+    try {
+      const sizeStr = await mainWindow.webContents.executeJavaScript(
+        'localStorage.getItem("desktop-lyric-size")'
+      )
+      if (sizeStr) {
+        lyricSize = parseFloat(sizeStr)
+      }
+    } catch (err) {
+      console.error('读取歌词大小设置失败:', err)
+    }
+  }
+
+  const baseWidth = 1000
+  const baseHeight = 220
+
   desktopLyricWindow = new BrowserWindow({
-    width: 1000,
-    height: 220,
+    width: Math.round(baseWidth * lyricSize),
+    height: Math.round(baseHeight * lyricSize),
     frame: false,
     transparent: true,
     alwaysOnTop: true,

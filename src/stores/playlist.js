@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { showSuccess, showError, showDeleteConfirm } from '../utils/notification'
+import { showSuccess, showError, showDeleteConfirm } from '@/utils/notification'
 
 export const usePlaylistStore = defineStore('playlist', () => {
   // 状态

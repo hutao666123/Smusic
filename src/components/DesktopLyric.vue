@@ -1,5 +1,5 @@
 <template>
-  <div class="desktop-lyric" :class="{ locked: isLocked, hovered: isHovered }">
+  <div class="desktop-lyric" :class="{ locked: isLocked, hovered: isHovered }" :style="{ fontSize: `${lyricScale}em` }">
     <!-- 锁定状态的解锁按钮 -->
     <div v-if="isLocked" class="unlock-btn" @click="toggleLock" @mouseenter="onUnlockHover" @mouseleave="onUnlockLeave">
       <svg t="1765373484152" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7180" width="20" height="20"><path d="M1024 253.698302q0 45.010989-14.321678 85.418581t-40.407592 73.142857-61.378621 55.752248-76.211788 33.246753q3.068931 23.528472 3.068931 45.010989 0 72.631369-27.62038 137.078921t-75.7003 112.015984-112.527473 75.188811-137.078921 27.62038q-55.240759 0-105.366633-15.856144t-93.090909-45.522478l-282.341658 187.204795 188.227772-283.364635q-28.643357-42.965035-43.476523-91.556444t-14.833167-102.809191q0-72.631369 27.62038-137.078921t75.188811-112.015984 111.504496-75.188811 136.567433-27.62038q11.252747 0 20.45954 0.511489t19.436563 1.534466q10.22977-41.942058 33.246753-78.257742t55.752248-62.401598 73.142857-40.919081 86.441558-14.833167q52.171828 0 98.717283 19.948052t80.815185 54.217782 54.217782 80.815185 19.948052 98.717283zM480.799201 769.278721q47.056943 0 87.976024-17.902098t71.096903-48.591409 47.568432-71.608392 17.390609-86.953047q0-24.551449-4.091908-45.010989-8.183816-2.045954-15.344655-4.603397t-15.344655-5.626374l-88.999001 87.976024q-14.321678 14.321678-31.712288 20.971029t-35.804196 6.649351-36.315684-6.649351-31.200799-20.971029q-14.321678-14.321678-20.971029-31.712288t-6.649351-35.804196 6.649351-35.804196 20.971029-31.712288l88.999001-88.999001q-3.068931-8.183816-5.626374-14.833167t-4.603397-13.81019q-19.436563-4.091908-43.988012-4.091908-46.033966 0-86.953047 17.390609t-71.608392 48.07992-48.07992 71.608392-17.390609 86.953047 17.390609 86.953047 48.07992 71.608392 71.608392 48.591409 86.953047 17.902098zM770.301698 386.685315q26.597403 0 50.125874-10.22977t41.430569-27.62038 28.131868-41.430569 10.22977-50.637363-10.22977-50.125874-28.131868-40.919081-41.430569-27.62038-50.125874-10.22977-50.637363 10.22977-41.430569 27.62038-27.62038 40.919081-10.22977 50.125874 10.22977 50.637363 27.62038 41.430569 41.430569 27.62038 50.637363 10.22977z" p-id="7181"></path></svg>
@@ -18,12 +18,15 @@
 
     <!-- 歌词显示区 -->
     <div class="lyric-area">
-      <div class="lyric-text current">{{ currentLyric || songName || '暂无歌词' }}</div>
+      <div class="lyric-text current" :style="{ 
+        color: lyricColor,
+        textShadow: `0 0 40px ${lyricColor}80, 0 0 20px ${lyricColor}60`
+      }">{{ currentLyric || songName || '暂无歌词' }}</div>
       <div class="lyric-text next" v-if="nextLyric">{{ nextLyric }}</div>
     </div>
 
     <!-- 底部控制栏 -->
-    <div class="bottom-bar" v-show="!isLocked">
+    <div class="bottom-bar" v-show="!isLocked && isHovered">
       <button @click="prev" class="play-btn" title="上一首">
         <svg t="1765370595956" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5731" width="20" height="20">
           <path d="M928 335.1c-22.6-53.4-54.9-101.3-96.1-142.5-41.2-41.2-89.1-73.5-142.5-96.1-55.3-23.4-114-35.2-174.5-35.2S395.7 73.1 340.4 96.5c-53.4 22.6-101.3 54.9-142.5 96.1-41.2 41.2-73.5 89.1-96.1 142.5-23.4 55.3-35.2 114-35.2 174.5s11.9 119.2 35.2 174.5c22.6 53.4 54.9 101.3 96.1 142.5 41.2 41.2 89.1 73.5 142.5 96.1 55.3 23.4 114 35.2 174.5 35.2s119.2-11.9 174.5-35.2c53.4-22.6 101.3-54.9 142.5-96.1 41.2-41.2 73.5-89.1 96.1-142.5 23.4-55.3 35.2-114 35.2-174.5S951.3 390.4 928 335.1zM514.9 877.9c-203.1 0-368.3-165.2-368.3-368.3 0-203.1 165.2-368.3 368.3-368.3 203.1 0 368.3 165.2 368.3 368.3 0 203-165.2 368.3-368.3 368.3z" p-id="5732"></path><path d="M685.9 339.9c-12.4-7.1-27.6-7.1-40 0l-233.8 135c-3.1 1.8-5.8 3.9-8.3 6.4V356.6c0-22.1-17.9-40-40-40s-40 17.9-40 40v306c0 22.1 17.9 40 40 40s40-17.9 40-40V537.9c2.4 2.4 5.2 4.6 8.3 6.4l233.8 135c6.2 3.6 13.1 5.4 20 5.4s13.8-1.8 20-5.4c12.4-7.1 20-20.3 20-34.6v-270c0-14.4-7.6-27.6-20-34.8z m-60 235.4l-113.8-65.7 113.8-65.7v131.4z" p-id="5733"></path></svg>
@@ -47,7 +50,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useThemeStore } from '../stores/theme'
+
+const themeStore = useThemeStore()
 
 const currentLyric = ref('')
 const nextLyric = ref('')
@@ -57,7 +63,27 @@ const isPlaying = ref(false)
 const isLocked = ref(false)
 const isHovered = ref(false)
 
+// 计算歌词颜色
+const lyricColor = computed(() => {
+  return themeStore.desktopLyricColor || '#00ffcc'
+})
+
+// 计算歌词大小
+const lyricScale = computed(() => {
+  return themeStore.desktopLyricSize || 1.0
+})
+
 onMounted(() => {
+  // 确保从 localStorage 加载设置
+  const savedColor = localStorage.getItem('desktop-lyric-color')
+  const savedSize = localStorage.getItem('desktop-lyric-size')
+  
+  console.log('桌面歌词加载设置:', { savedColor, savedSize })
+  console.log('themeStore 值:', { 
+    color: themeStore.desktopLyricColor, 
+    size: themeStore.desktopLyricSize 
+  })
+  
   window.electron.onPlayerStateUpdate((state) => {
     isPlaying.value = state.isPlaying
     songName.value = state.songName || ''
@@ -121,6 +147,8 @@ const close = () => {
   user-select: none;
   overflow: hidden;
   transition: background 0.3s ease;
+  position: relative;
+  font-size: 16px;
 }
 
 .desktop-lyric.hovered:not(.locked) {
@@ -134,16 +162,15 @@ const close = () => {
 
 
 .unlock-btn {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  width: 40px;
-  height: 40px;
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  width: 2.25em;
+  height: 2.25em;
   background: rgba(0, 255, 204, 0.15);
   border: 2px solid rgba(0, 255, 204, 0.4);
-  border-radius: 10px;
+  border-radius: 0.5em;
   color: #00ffcc;
-  font-size: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -166,7 +193,7 @@ const close = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 20px;
+  padding: 0.5em 1.25em;
 }
 
 .logo {
@@ -181,14 +208,14 @@ const close = () => {
 }
 
 .top-btn {
-  width: 36px;
-  height: 36px;
+  width: 2.25em;
+  height: 2.25em;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: 0.5em;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1em;
   transition: all 0.3s;
   display: flex;
   align-items: center;
@@ -216,12 +243,12 @@ const close = () => {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 5px 30px 0;
-  gap: 8px;
+  padding: 0.3125em 1.875em 0;
+  gap: 0.5em;
 }
 
 .lyric-text {
-  font-size: 32px;
+  font-size: 2em;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
@@ -230,17 +257,11 @@ const close = () => {
 }
 
 .lyric-text.current {
-  background: linear-gradient(135deg, #00ffcc 0%, #00d4aa 50%, #00ffcc 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: shimmer 3s linear infinite;
-  text-shadow: 0 0 40px rgba(0, 255, 204, 0.3);
+  /* 颜色通过内联样式动态设置 */
 }
 
 .lyric-text.next {
-  font-size: 24px;
+  font-size: 1.5em;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
 }
@@ -249,19 +270,19 @@ const close = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  padding: 15px;
+  gap: 0.75em;
+  padding: 0.9375em;
   -webkit-app-region: no-drag;
 }
 
 .play-btn {
-  width: 38px;
-  height: 38px;
+  width: 2.375em;
+  height: 2.375em;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   color: #fff;
-  font-size: 16px;
+  font-size: 1em;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -275,12 +296,12 @@ const close = () => {
 }
 
 .play-btn.main {
-  width: 45px;
-  height: 45px;
+  width: 2.8125em;
+  height: 2.8125em;
   background: linear-gradient(135deg, #00ffcc, #00d4aa);
   border: none;
   color: #000;
-  font-size: 18px;
+  font-size: 1em;
 }
 
 .play-btn.main:hover {

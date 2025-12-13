@@ -1,5 +1,4 @@
-import { usePlayerStore } from '../stores/player'
-import { getMusicUrl } from '../api/music'
+import { getMusicUrl } from '@/api/music'
 
 class AudioPlayer {
   constructor() {

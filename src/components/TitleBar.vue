@@ -129,15 +129,16 @@ const close = () => {
   justify-content: space-between;
   align-items: center;
   height: 60px;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--titlebar-bg);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  border-bottom: 1px solid var(--titlebar-border);
+  color: var(--text-primary);
   user-select: none;
   padding: 0 16px;
   flex-shrink: 0;
   position: relative;
   z-index: 200;
+  transition: background 0.3s, border-color 0.3s;
 }
 
 .title-bar-left {

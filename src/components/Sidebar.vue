@@ -270,7 +270,7 @@ const handlePlaylistCreated = (newPlaylist) => {
 }
 
 .menu-item.active {
-  background: var(--primary-color);
+  background: var(--accent-gradient);
   color: var(--text-primary);
   font-weight: 500;
 }
@@ -376,7 +376,7 @@ const handlePlaylistCreated = (newPlaylist) => {
 }
 
 .playlist-item.active {
-  background: var(--primary-color);
+  background: var(--accent-gradient);
   color: var(--text-primary);
   font-weight: 500;
 }

@@ -17,6 +17,7 @@ import { setupNotification } from './utils/notification'
 import { useThemeStore } from './stores/theme'
 import AppContentWrapper from './components/AppContentWrapper.vue'
 import './styles/theme.css'
+import './styles/accent-colors.css'
 
 const themeStore = useThemeStore()
 

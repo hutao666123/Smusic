@@ -3,10 +3,12 @@
   <div class="song-detail">
     <!-- 动态背景 -->
     <div class="animated-bg">
-      <div class="bg-gradient"></div>
-      <div class="bg-particles">
-        <div v-for="i in 20" :key="i" class="particle" :style="getParticleStyle(i)"></div>
-      </div>
+      <div class="bg-gradient" :style="bgGradientStyle"></div>
+      <component 
+        v-if="currentEffectComponent" 
+        :is="currentEffectComponent" 
+        :config="visualTheme.effectConfig"
+      />
     </div>
 
     <div class="detail-container">
@@ -16,7 +18,7 @@
         <div class="vinyl-container">
           <div class="vinyl-disc" :class="{ spinning: isPlaying }">
             <div class="vinyl-grooves"></div>
-            <div class="album-cover-wrapper">
+            <div class="album-cover-wrapper" :style="vinylGlowStyle">
               <img
                 v-if="albumCover"
                 :src="albumCover"
@@ -35,10 +37,10 @@
         <!-- 歌曲信息 -->
         <div class="song-info">
           <h2 class="song-title" ref="songTitleRef">
-            <span class="title-text">{{ currentSong.name }}</span>
+            <span class="title-text" :style="titleStyle">{{ currentSong.name }}</span>
           </h2>
           <p class="song-artist" ref="songArtistRef">
-            <span class="artist-text">{{ currentSong.artist }}</span>
+            <span class="artist-text" :style="artistStyle">{{ currentSong.artist }}</span>
           </p>
         </div>
       </div>
@@ -69,9 +71,13 @@
                 passed: index < currentLineIndex,
                 upcoming: index > currentLineIndex
               }"
+              :style="index === currentLineIndex ? lyricActiveBgStyle : {}"
               @click="seekToTime(line.time)"
             >
-              <span class="lyric-text">{{ line.text }}</span>
+              <span 
+                class="lyric-text"
+                :style="index === currentLineIndex ? lyricActiveStyle : (index < currentLineIndex ? lyricPassedStyle : lyricUpcomingStyle)"
+              >{{ line.text }}</span>
             </div>
             <div class="lyrics-spacer"></div>
           </div>
@@ -85,17 +91,123 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
+import { useThemeStore } from '../stores/theme'
 import { getSongDetail, getLyric } from '../api/music'
 import audioPlayer from '../services/audioPlayer'
+import ParticleEffect from '../components/visual-effects/ParticleEffect.vue'
+import RippleEffect from '../components/visual-effects/RippleEffect.vue'
+import AuroraEffect from '../components/visual-effects/AuroraEffect.vue'
+import GlowEffect from '../components/visual-effects/GlowEffect.vue'
+import CyberEffect from '../components/visual-effects/CyberEffect.vue'
+import SakuraEffect from '../components/visual-effects/SakuraEffect.vue'
+import MistEffect from '../components/visual-effects/MistEffect.vue'
 
 const router = useRouter()
 const route = useRoute()
 const playerStore = usePlayerStore()
+const themeStore = useThemeStore()
 
 const currentSong = computed(() => playerStore.currentSong)
 const currentTime = computed(() => playerStore.currentTime)
 const duration = computed(() => playerStore.duration)
 const isPlaying = computed(() => playerStore.isPlaying)
+
+// 当前视觉主题
+const visualTheme = computed(() => themeStore.currentVisualTheme)
+
+// 背景渐变样式
+const bgGradientStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  const colors = visualTheme.value.bgColors
+  return {
+    background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]}, ${colors[2]})`
+  }
+})
+
+// 歌名样式
+const titleStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  const color = visualTheme.value.textColors.songTitle
+  if (color.startsWith('linear-gradient')) {
+    return {
+      background: color,
+      '-webkit-background-clip': 'text',
+      '-webkit-text-fill-color': 'transparent',
+      'background-clip': 'text'
+    }
+  }
+  return { color }
+})
+
+// 歌手名样式
+const artistStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  return {
+    color: visualTheme.value.textColors.songArtist
+  }
+})
+
+// 唱片光晕样式
+const vinylGlowStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  return {
+    boxShadow: `0 0 30px ${visualTheme.value.vinylGlow}`
+  }
+})
+
+// 歌词样式
+const lyricActiveStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  const color = visualTheme.value.lyricColors.active
+  if (color.startsWith('linear-gradient')) {
+    return {
+      background: color,
+      '-webkit-background-clip': 'text',
+      '-webkit-text-fill-color': 'transparent',
+      'background-clip': 'text'
+    }
+  }
+  return { color }
+})
+
+const lyricActiveBgStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  return {
+    background: visualTheme.value.lyricColors.activeBg,
+    boxShadow: `0 4px 20px ${visualTheme.value.vinylGlow}`
+  }
+})
+
+const lyricPassedStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  return {
+    color: visualTheme.value.lyricColors.passed
+  }
+})
+
+const lyricUpcomingStyle = computed(() => {
+  if (!visualTheme.value) return {}
+  return {
+    color: visualTheme.value.lyricColors.upcoming
+  }
+})
+
+// 效果组件映射
+const effectComponents = {
+  particles: ParticleEffect,
+  ripple: RippleEffect,
+  aurora: AuroraEffect,
+  glow: GlowEffect,
+  cyber: CyberEffect,
+  sakura: SakuraEffect,
+  mist: MistEffect,
+  none: null
+}
+
+const currentEffectComponent = computed(() => {
+  if (!visualTheme.value) return null
+  return effectComponents[visualTheme.value.effectType]
+})
 
 const albumCover = ref('')
 const lyrics = ref('')
@@ -103,10 +215,41 @@ const lyricsLoading = ref(false)
 const currentLineIndex = ref(0)
 const lyricsWithTime = ref([])
 const lyricsContainer = ref(null)
+const songTitleRef = ref(null)
+const songArtistRef = ref(null)
 
 // 用户滚动控制
 const isUserScrolling = ref(false)
 let scrollTimer = null
+
+// 检查文本是否溢出
+const checkTextOverflow = () => {
+  if (songTitleRef.value) {
+    const titleElement = songTitleRef.value
+    const textElement = titleElement.querySelector('.title-text')
+    if (textElement && titleElement) {
+      const isOverflow = textElement.scrollWidth > titleElement.clientWidth
+      if (isOverflow) {
+        textElement.classList.add('scrolling')
+      } else {
+        textElement.classList.remove('scrolling')
+      }
+    }
+  }
+  
+  if (songArtistRef.value) {
+    const artistElement = songArtistRef.value
+    const textElement = artistElement.querySelector('.artist-text')
+    if (textElement && artistElement) {
+      const isOverflow = textElement.scrollWidth > artistElement.clientWidth
+      if (isOverflow) {
+        textElement.classList.add('scrolling')
+      } else {
+        textElement.classList.remove('scrolling')
+      }
+    }
+  }
+}
 
 // 粒子动画样式
 const getParticleStyle = () => {
@@ -131,12 +274,16 @@ onMounted(async () => {
     // 加载完成后，初始居中当前歌词
     await nextTick()
     scrollToCurrentLyric()
+    checkTextOverflow()
   }
 
   // 监听用户滚动
   if (lyricsContainer.value) {
     lyricsContainer.value.addEventListener('scroll', handleUserScroll, { passive: true })
   }
+  
+  // 监听窗口大小变化
+  window.addEventListener('resize', checkTextOverflow)
 })
 
 onUnmounted(() => {
@@ -147,6 +294,7 @@ onUnmounted(() => {
   if (scrollTimer) {
     clearTimeout(scrollTimer)
   }
+  window.removeEventListener('resize', checkTextOverflow)
 })
 
 // 滚动到当前歌词
@@ -192,6 +340,8 @@ watch(currentSong, async (newSong) => {
       router.replace(`/song/${newSong.id}`)
     }
     await loadSongDetails(newSong.id)
+    await nextTick()
+    checkTextOverflow()
   }
 })
 
@@ -206,6 +356,7 @@ watch(() => route.params.id, async (newId) => {
     }
     await nextTick()
     scrollToCurrentLyric()
+    checkTextOverflow()
   }
 })
 
@@ -331,44 +482,12 @@ const goBack = () => {
 .bg-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
   animation: gradientShift 15s ease infinite;
 }
 
 @keyframes gradientShift {
   0%, 100% { filter: hue-rotate(0deg); }
   50% { filter: hue-rotate(30deg); }
-}
-
-.bg-particles {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.particle {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 50%;
-  animation: float linear infinite;
-  pointer-events: none;
-}
-
-@keyframes float {
-  0% {
-    transform: translateY(100vh) rotate(0deg);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-100px) rotate(360deg);
-    opacity: 0;
-  }
 }
 
 /* 返回按钮 - 移除，使用标题栏的返回按钮 */
@@ -445,7 +564,6 @@ const goBack = () => {
   height: 60%;
   border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
   background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
@@ -481,17 +599,10 @@ const goBack = () => {
 
 .title-text {
   display: inline-block;
-  background: linear-gradient(135deg, #fff, #f093fb);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: autoScroll 12s linear infinite;
 }
 
-.song-artist {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
+.title-text.scrolling {
+  animation: autoScroll 12s linear infinite;
 }
 
 @keyframes autoScroll {
@@ -505,8 +616,19 @@ const goBack = () => {
 
 .song-artist {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
   margin: 0;
+  max-width: 300px;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.artist-text {
+  display: inline-block;
+}
+
+.artist-text.scrolling {
+  animation: autoScroll 12s linear infinite;
 }
 
 /* 右侧歌词面板 */
@@ -583,30 +705,21 @@ const goBack = () => {
 }
 
 .lyric-line.passed .lyric-text {
-  color: rgba(255, 255, 255, 0.3);
   font-size: 16px;
 }
 
 .lyric-line.upcoming .lyric-text {
-  color: rgba(255, 255, 255, 0.5);
   font-size: 16px;
 }
 
 .lyric-line.active {
-  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
 }
 
 .lyric-line.active .lyric-text {
-  color: #fff;
   font-size: 24px;
   font-weight: 600;
-  background: linear-gradient(135deg, #fff, #f093fb);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .lyric-line:hover:not(.active) {
