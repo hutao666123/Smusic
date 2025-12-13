@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, ipcMain, protocol } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const isDev = require('electron-is-dev')
+const { spawn } = require('child_process')
 const FileManager = require('./lib/FileManager')
 const PlaylistManager = require('./lib/PlaylistManager')
 const DownloadManager = require('./lib/DownloadManager')
@@ -25,6 +26,7 @@ let desktopLyricWindow = null
 let fileManager
 let playlistManager
 let downloadManager
+let apiServerProcess = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -44,7 +46,7 @@ function createWindow() {
 
   const startUrl = isDev
     ? 'http://localhost:5173'
-    : `file://${path.join(__dirname, '../dist/index.html')}`
+    : `file://${path.join(__dirname, 'dist/index.html')}`
 
   mainWindow.loadURL(startUrl)
 
@@ -108,7 +110,7 @@ async function createDesktopLyricWindow() {
 
   const lyricUrl = isDev
     ? 'http://localhost:5173/desktop-lyric.html'
-    : `file://${path.join(__dirname, '../dist/desktop-lyric.html')}`
+    : `file://${path.join(__dirname, 'dist/desktop-lyric.html')}`
 
   desktopLyricWindow.loadURL(lyricUrl)
 
@@ -715,6 +717,62 @@ function registerIpcHandlers() {
   })
 }
 
+// 启动 API 服务
+function startApiServer() {
+  // 开发环境和生产环境的路径不同
+  const apiPath = isDev
+    ? path.join(__dirname, 'services', 'api-enhanced', 'app.js')
+    : path.join(process.resourcesPath, 'services', 'api-enhanced', 'app.js')
+  
+  const apiCwd = isDev
+    ? path.join(__dirname, 'services', 'api-enhanced')
+    : path.join(process.resourcesPath, 'services', 'api-enhanced')
+  
+  if (!fs.existsSync(apiPath)) {
+    console.error('API 服务文件不存在:', apiPath)
+    console.error('当前 __dirname:', __dirname)
+    console.error('当前 resourcesPath:', process.resourcesPath)
+    return
+  }
+  
+  console.log('正在启动 API 服务...')
+  console.log('API 路径:', apiPath)
+  console.log('工作目录:', apiCwd)
+  
+  apiServerProcess = spawn('node', [apiPath], {
+    cwd: apiCwd,
+    stdio: 'pipe',
+    windowsHide: true
+  })
+  
+  // 捕获输出日志
+  apiServerProcess.stdout.on('data', (data) => {
+    console.log('[API服务]', data.toString())
+  })
+  
+  apiServerProcess.stderr.on('data', (data) => {
+    console.error('[API服务错误]', data.toString())
+  })
+  
+  apiServerProcess.on('error', (err) => {
+    console.error('API 服务启动失败:', err)
+  })
+  
+  apiServerProcess.on('exit', (code) => {
+    console.log('API 服务已退出，退出码:', code)
+    apiServerProcess = null
+  })
+}
+
+// 停止 API 服务
+function stopApiServer() {
+  if (apiServerProcess) {
+    console.log('正在停止 API 服务...')
+    apiServerProcess.kill()
+    apiServerProcess = null
+  }
+}
+
 app.on('ready', async () => {
   // 注册自定义协议用于加载本地音频文件
   protocol.registerStreamProtocol('local-audio', (request, callback) => {
@@ -744,12 +802,16 @@ app.on('ready', async () => {
     }
   })
   
+  // 启动 API 服务
+  startApiServer()
+  
   await initializeManagers()
   registerIpcHandlers()
   createWindow()
 })
 
 app.on('window-all-closed', () => {
+  stopApiServer()
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -763,6 +825,8 @@ app.on('activate', () => {
 
 // 应用退出前保存所有未写入的数据
 app.on('before-quit', async (event) => {
+  stopApiServer()
+  
   if (fileManager) {
     event.preventDefault()
     

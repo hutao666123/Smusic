@@ -4,9 +4,30 @@
   "description": "Smusic",
   "main": "electron-main.js",
   "build": {
+    "appId": "com.smusic.app",
+    "productName": "Smusic",
     "electronDownload": {
       "mirror": "https://npmmirror.com/mirrors/electron/"
-    }
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": ["nsis"]
+    },
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "preload.js",
+      "lib/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "services/api-enhanced",
+        "to": "services/api-enhanced",
+        "filter": ["**/*"]
+      }
+    ]
   },
   "scripts": {
     "dev": "vite",

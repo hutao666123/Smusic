@@ -12,3 +12,5 @@ dist/
 .cache/
 downloads/
 下载和本地播放问题解决方案.md
+installer-output/Smusic-Setup-1.0.0.exe
+services/api-enhanced
