@@ -1,4 +1,5 @@
 <template>
+  <!--本地歌单-->
   <div class="local-playlist">
     <div v-if="loading" class="loading">加载中...</div>
 
@@ -53,16 +54,20 @@
               <span class="download-icon">⬇</span>
               下载全部
             </button>
+            <button
+              v-if="isDownloadsPlaylist"
+              @click="openDownloadsFolder"
+              class="open-folder-btn"
+            >
+              <span class="folder-icon">📁</span>
+              打开下载目录
+            </button>
           </div>
         </div>
       </div>
 
       <!-- 歌曲列表 -->
       <div class="playlist-songs">
-        <div class="songs-header">
-          <h3>歌曲列表</h3>
-        </div>
-
         <div v-if="songs.length === 0" class="empty-state">
           <div class="empty-icon">🎵</div>
           <p class="empty-text">歌单中还没有歌曲</p>
@@ -500,6 +505,32 @@ const downloadAll = async () => {
   }
 }
 
+// 打开下载目录
+const openDownloadsFolder = async () => {
+  try {
+    let result
+    
+    // 优先使用openDownloadsFolder方法
+    if (typeof window.electron?.openDownloadsFolder === 'function') {
+      result = await window.electron.openDownloadsFolder()
+    } else if (window.electron?.ipcRenderer) {
+      // 备选方案：直接使用ipcRenderer
+      result = await window.electron.ipcRenderer.invoke('open-downloads-folder')
+    } else {
+      throw new Error('无法访问electron API')
+    }
+    
+    if (result?.success) {
+      showToast('已打开下载目录', 'success')
+    } else {
+      showToast('打开下载目录失败', 'error')
+    }
+  } catch (error) {
+    showToast('打开下载目录失败', 'error')
+    console.error('打开下载目录错误:', error)
+  }
+}
+
 // 关闭下载进度对话框
 const handleDownloadProgressClose = async () => {
   showDownloadProgress.value = false
@@ -721,19 +752,19 @@ const createFavoriteAnimation = (event) => {
 /* 歌单头部 */
 .playlist-header {
   display: flex;
-  gap: 40px;
-  margin-bottom: 50px;
+  gap: 30px;
+  margin-bottom: 20px;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-  padding: 30px;
+  padding: 20px 30px;
   border-radius: 12px;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .playlist-cover {
-  flex: 0 0 220px;
-  width: 220px;
-  height: 220px;
+  flex: 0 0 160px;
+  width: 160px;
+  height: 160px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -803,7 +834,7 @@ const createFavoriteAnimation = (event) => {
 
 .playlist-info h1 {
   margin: 0;
-  font-size: 36px;
+  font-size: 28px;
   font-weight: bold;
   line-height: 1.2;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -812,32 +843,32 @@ const createFavoriteAnimation = (event) => {
 .playlist-desc {
   margin: 0;
   color: var(--text-secondary);
-  line-height: 1.6;
-  font-size: 14px;
-  max-height: 90px;
+  line-height: 1.5;
+  font-size: 13px;
+  max-height: 50px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
 .playlist-meta {
   display: flex;
-  gap: 25px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 5px;
+  font-size: 12px;
   color: var(--text-primary);
 }
 
 .meta-icon {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 /* 操作按钮 */
@@ -848,67 +879,110 @@ const createFavoriteAnimation = (event) => {
 }
 
 .play-all-btn,
-.download-all-btn {
+.download-all-btn,
+.open-folder-btn {
   border: none;
   color: white;
-  padding: 14px 32px;
-  border-radius: 30px;
+  padding: 10px 24px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.3s;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.play-all-btn::before,
+.download-all-btn::before,
+.open-folder-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: left 0.3s ease;
+  z-index: 0;
+}
+
+.play-all-btn:hover::before:not(:disabled),
+.download-all-btn:hover::before:not(:disabled),
+.open-folder-btn:hover::before {
+  left: 100%;
+}
+
+.play-all-btn,
+.download-all-btn,
+.open-folder-btn {
+  z-index: 1;
 }
 
 .play-all-btn {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
 }
 
 .play-all-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+
+.play-all-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .download-all-btn {
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
-  box-shadow: 0 4px 16px rgba(79, 172, 254, 0.4);
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.35);
 }
 
 .download-all-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+  box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
+}
+
+.download-all-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.open-folder-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+}
+
+.open-folder-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+}
+
+.open-folder-btn:active {
+  transform: translateY(0);
 }
 
 .play-all-btn:disabled,
 .download-all-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none !important;
 }
 
 .play-icon,
-.download-icon {
+.download-icon,
+.folder-icon {
   font-size: 14px;
 }
 
 /* 歌曲列表 */
 .playlist-songs {
-  margin-top: 40px;
+  margin-top: 0;
 }
 
-.songs-header {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid var(--border-color);
-}
 
-.songs-header h3 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: bold;
-}
 
 /* 空状态 */
 .empty-state {
@@ -1331,7 +1405,8 @@ const createFavoriteAnimation = (event) => {
   }
 
   .play-all-btn,
-  .download-all-btn {
+  .download-all-btn,
+  .open-folder-btn {
     width: 100%;
     justify-content: center;
   }

@@ -257,14 +257,61 @@
         </div>
       </div>
 
-      <!-- 其他设置可以后续添加 -->
+      <!-- 应用行为设置 -->
+      <div class="settings-section">
+        <h2 class="section-title">应用行为</h2>
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="label-text">关闭窗口时</span>
+            <span class="label-desc">选择点击关闭按钮时的行为</span>
+          </div>
+          <div class="close-action-options">
+            <button 
+              class="action-option"
+              :class="{ active: themeStore.closeAction === 'quit' }"
+              @click="themeStore.setCloseAction('quit')"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+              </svg>
+              <span>关闭应用</span>
+            </button>
+            <button 
+              class="action-option"
+              :class="{ active: themeStore.closeAction === 'minimize-to-tray' }"
+              @click="themeStore.setCloseAction('minimize-to-tray')"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19,13H5V11H19V13Z"/>
+              </svg>
+              <span>最小化到托盘</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 关于和更新 -->
       <div class="settings-section">
         <h2 class="section-title">关于</h2>
         <div class="setting-item">
           <div class="setting-label">
             <span class="label-text">版本</span>
-            <span class="label-desc">Smusic v1.0.0</span>
+            <span class="label-desc">Smusic v{{ appVersion }}</span>
           </div>
+          <button 
+            class="check-update-btn"
+            :class="{ checking: isCheckingUpdate }"
+            :disabled="isCheckingUpdate"
+            @click="checkForUpdate"
+          >
+            <svg v-if="!isCheckingUpdate" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"/>
+            </svg>
+            <svg v-else class="spin" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+            </svg>
+            <span>{{ isCheckingUpdate ? '检查中...' : '检查更新' }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -272,10 +319,70 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useThemeStore } from '../stores/theme'
 
 const themeStore = useThemeStore()
+
+// 从 package.json 读取配置
+import packageJson from '../../package.json'
+
+// 应用版本
+const appVersion = ref(packageJson.version)
+
+// 更新检查相关
+const isCheckingUpdate = ref(false)
+const UPDATE_CHECK_URL = packageJson.updateUrl
+
+// 检查更新
+const checkForUpdate = async () => {
+  isCheckingUpdate.value = true
+
+  try {
+    const response = await fetch(UPDATE_CHECK_URL)
+    if (!response.ok) {
+      throw new Error('无法连接到更新服务器')
+    }
+
+    const data = await response.json()
+    const latestVersion = data.version
+    const currentVersion = appVersion.value
+
+    // 比较版本号
+    if (compareVersions(latestVersion, currentVersion) > 0) {
+      // 有新版本
+      const message = `发现新版本 v${latestVersion}\n\n${data.releaseNotes}\n\n是否前往下载？`
+      if (confirm(message)) {
+        // 获取发布页面 URL（去掉 version.json，保留基础 URL）
+        const baseUrl = UPDATE_CHECK_URL.replace('/version.json', '')
+        window.electron.openExternal(baseUrl)
+      }
+    } else {
+      alert('当前已是最新版本')
+    }
+  } catch (error) {
+    console.error('检查更新失败:', error)
+    alert('检查更新失败: ' + error.message)
+  } finally {
+    isCheckingUpdate.value = false
+  }
+}
+
+// 版本号比较函数
+const compareVersions = (v1, v2) => {
+  const parts1 = v1.split('.').map(Number)
+  const parts2 = v2.split('.').map(Number)
+  
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const part1 = parts1[i] || 0
+    const part2 = parts2[i] || 0
+    
+    if (part1 > part2) return 1
+    if (part1 < part2) return -1
+  }
+  
+  return 0
+}
 
 // 视觉主题
 const visualThemes = computed(() => themeStore.visualThemes)
@@ -566,6 +673,45 @@ const isValidColor = (color) => {
 }
 
 .theme-option span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.close-action-options {
+  display: flex;
+  gap: 12px;
+}
+
+.action-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--button-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: var(--text-secondary);
+}
+
+.action-option:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.action-option.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.action-option svg {
+  width: 20px;
+  height: 20px;
+}
+
+.action-option span {
   font-size: 14px;
   font-weight: 500;
 }
@@ -942,5 +1088,59 @@ const isValidColor = (color) => {
 .theme-desc {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.check-update-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.check-update-btn:hover:not(:disabled) {
+  background: var(--primary-hover-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.check-update-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.check-update-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.check-update-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.check-update-btn.checking {
+  background: var(--button-bg);
+  color: var(--text-secondary);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 </style>

@@ -1,4 +1,5 @@
 <template>
+  <!--在线歌单-->
   <div class="playlist">
     <div v-if="loading" class="loading">加载中...</div>
 
@@ -46,9 +47,6 @@
       </div>
 
       <div class="playlist-songs">
-        <div class="songs-header">
-          <h3>歌曲列表</h3>
-        </div>
         <div class="songs-list">
           <div
             v-for="(song, index) in displayedSongs"

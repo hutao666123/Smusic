@@ -36,6 +36,11 @@ contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+  
+  // 监听窗口状态变化
+  onWindowStateChange: (callback) => {
+    ipcRenderer.on('window-state-change', (event, state) => callback(state))
+  },
 
   // 桌面歌词窗口控制
   openDesktopLyric: () => ipcRenderer.send('open-desktop-lyric'),
@@ -75,6 +80,9 @@ contextBridge.exposeInMainWorld('electron', {
 
   // 开发者工具
   openDevTools: () => ipcRenderer.send('open-dev-tools'),
+
+  // 打开外部链接
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   // 日志
   log: (message) => console.log('[Smusic]', message),
@@ -230,6 +238,15 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   /**
+   * 获取本地歌词
+   * @param {string} songId - 歌曲 ID
+   * @returns {Promise<Object>} - 包含歌词内容的结果对象
+   */
+  getLocalLyric: (songId) => {
+    return ipcRenderer.invoke('get-local-lyric', songId)
+  },
+
+  /**
    * 读取本地音频文件
    * @param {string} filePath - 文件路径
    * @returns {Promise<Object>} - 包含文件 buffer 的结果对象
@@ -321,5 +338,14 @@ contextBridge.exposeInMainWorld('electron', {
    * 获取下载目录占用的磁盘空间
    * @returns {Promise<Object>} - 目录大小（字节）
    */
-  getDownloadsSize: () => ipcRenderer.invoke('get-downloads-size')
+  getDownloadsSize: () => ipcRenderer.invoke('get-downloads-size'),
+
+  /**
+   * 打开下载目录
+   * @returns {Promise<Object>} - 操作结果
+   */
+  openDownloadsFolder: () => ipcRenderer.invoke('open-downloads-folder'),
+
+  // 暴露ipcRenderer用于调试和备选方案
+  ipcRenderer: ipcRenderer
 })

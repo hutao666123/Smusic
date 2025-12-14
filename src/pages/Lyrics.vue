@@ -25,7 +25,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { usePlayerStore } from '../stores/player'
-import { getLyric } from '../api/music'
+import { loadLyric } from '../utils/lyricLoader'
 
 const playerStore = usePlayerStore()
 
@@ -73,9 +73,9 @@ const loadLyrics = async (songId) => {
 
   loading.value = true
   try {
-    const res = await getLyric(songId)
-    if (res.data.lrc && res.data.lrc.lyric) {
-      lyrics.value = res.data.lrc.lyric
+    const lyricContent = await loadLyric(songId)
+    if (lyricContent) {
+      lyrics.value = lyricContent
       currentLineIndex.value = 0
     } else {
       lyrics.value = ''

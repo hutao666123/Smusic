@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Smusic",
   "main": "electron-main.js",
+  "updateUrl": "https://smusic-release.pages.dev//version.json",
   "build": {
     "appId": "com.smusic.app",
     "productName": "Smusic",
@@ -25,7 +26,24 @@
       {
         "from": "services/api-enhanced",
         "to": "services/api-enhanced",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*",
+          "!.git/**",
+          "!.github/**",
+          "!.husky/**",
+          "!test/**",
+          "!examples/**",
+          "!module_example/**",
+          "!*.test.js",
+          "!.editorconfig",
+          "!.prettierrc",
+          "!.travis.yml",
+          "!eslint.config.js",
+          "!renovate.json",
+          "!pnpm-lock.yaml",
+          "!Dockerfile",
+          "!vercel.json"
+        ]
       }
     ]
   },

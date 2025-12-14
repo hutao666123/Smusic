@@ -92,7 +92,8 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { useThemeStore } from '../stores/theme'
-import { getSongDetail, getLyric } from '../api/music'
+import { getSongDetail } from '../api/music'
+import { loadLyric } from '../utils/lyricLoader'
 import audioPlayer from '../services/audioPlayer'
 import ParticleEffect from '../components/visual-effects/ParticleEffect.vue'
 import RippleEffect from '../components/visual-effects/RippleEffect.vue'
@@ -371,11 +372,11 @@ const loadSongDetails = async (songId) => {
       }
     }
 
-    // 获取歌词
+    // 获取歌词 - 优先尝试本地歌词
     lyricsLoading.value = true
-    const lyricRes = await getLyric(songId)
-    if (lyricRes.data.lrc && lyricRes.data.lrc.lyric) {
-      lyrics.value = lyricRes.data.lrc.lyric
+    const lyricContent = await loadLyric(songId)
+    if (lyricContent) {
+      lyrics.value = lyricContent
       parseLyricsWithTime()
     }
   } catch (error) {

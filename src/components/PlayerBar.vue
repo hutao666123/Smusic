@@ -39,9 +39,9 @@
           <path d="M928 335.1c-22.6-53.4-54.9-101.3-96.1-142.5-41.2-41.2-89.1-73.5-142.5-96.1-55.3-23.4-114-35.2-174.5-35.2S395.7 73.1 340.4 96.5c-53.4 22.6-101.3 54.9-142.5 96.1-41.2 41.2-73.5 89.1-96.1 142.5-23.4 55.3-35.2 114-35.2 174.5s11.9 119.2 35.2 174.5c22.6 53.4 54.9 101.3 96.1 142.5 41.2 41.2 89.1 73.5 142.5 96.1 55.3 23.4 114 35.2 174.5 35.2s119.2-11.9 174.5-35.2c53.4-22.6 101.3-54.9 142.5-96.1 41.2-41.2 73.5-89.1 96.1-142.5 23.4-55.3 35.2-114 35.2-174.5S951.3 390.4 928 335.1zM514.9 877.9c-203.1 0-368.3-165.2-368.3-368.3 0-203.1 165.2-368.3 368.3-368.3 203.1 0 368.3 165.2 368.3 368.3 0 203-165.2 368.3-368.3 368.3z" p-id="6076"></path>
           <path d="M413.8 316.6c-22.1 0-40 17.9-40 40v306c0 22.1 17.9 40 40 40s40-17.9 40-40v-306c0-22.1-17.9-40-40-40zM616 316.6c-22.1 0-40 17.9-40 40v306c0 22.1 17.9 40 40 40s40-17.9 40-40v-306c0-22.1-17.9-40-40-40z" p-id="6077"></path>
         </svg>
-        <svg v-else t="1765370657697" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5903" width="20" height="20">
-          <path d="M923.5 336.9c-22.6-53.4-54.9-101.3-96.1-142.5-41.2-41.2-89.1-73.5-142.5-96.1C629.7 75 571 63.1 510.5 63.1S391.3 75 336 98.3c-53.4 22.6-101.3 54.9-142.5 96.1-41.2 41.2-73.5 89.1-96.1 142.5-23.4 55.3-35.2 114-35.2 174.5s11.9 119.2 35.2 174.5c22.6 53.4 54.9 101.3 96.1 142.5 41.2 41.2 89.1 73.5 142.5 96.1 55.3 23.4 114 35.2 174.5 35.2s119.2-11.9 174.5-35.2c53.4-22.6 101.3-54.9 142.5-96.1 41.2-41.2 73.5-89.1 96.1-142.5 23.4-55.3 35.2-114 35.2-174.5s-11.9-119.2-35.3-174.5z m-413 542.8c-203.1 0-368.3-165.2-368.3-368.3 0-203.1 165.2-368.3 368.3-368.3 203.1 0 368.3 165.2 368.3 368.3 0 203.1-165.2 368.3-368.3 368.3z" p-id="5904"></path>
-          <path d="M647.4 341.8c-12.4-7.1-27.6-7.1-40 0l-233.8 135c-12.4 7.1-20 20.4-20 34.6 0 14.3 7.6 27.5 20 34.6l233.8 135c6.2 3.6 13.1 5.4 20 5.4s13.8-1.8 20-5.4c12.4-7.1 20-20.3 20-34.6v-270c0-14.3-7.6-27.5-20-34.6z m-60 235.3l-113.8-65.7 113.8-65.7v131.4z" p-id="5905"></path>
+        <svg v-else t="1765632864462" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1776" width="20" height="20">
+          <path d="M923.5 336.9c-22.6-53.4-54.9-101.3-96.1-142.5-41.2-41.2-89.1-73.5-142.5-96.1C629.7 75 571 63.1 510.5 63.1S391.3 75 336 98.3c-53.4 22.6-101.3 54.9-142.5 96.1-41.2 41.2-73.5 89.1-96.1 142.5-23.4 55.3-35.2 114-35.2 174.5s11.9 119.2 35.2 174.5c22.6 53.4 54.9 101.3 96.1 142.5 41.2 41.2 89.1 73.5 142.5 96.1 55.3 23.4 114 35.2 174.5 35.2s119.2-11.9 174.5-35.2c53.4-22.6 101.3-54.9 142.5-96.1 41.2-41.2 73.5-89.1 96.1-142.5 23.4-55.3 35.2-114 35.2-174.5s-11.9-119.2-35.3-174.5z m-413 542.8c-203.1 0-368.3-165.2-368.3-368.3 0-203.1 165.2-368.3 368.3-368.3 203.1 0 368.3 165.2 368.3 368.3 0 203.1-165.2 368.3-368.3 368.3z" p-id="1777"></path>
+          <path transform="rotate(180, 512, 512)" d="M647.4 341.8c-12.4-7.1-27.6-7.1-40 0l-233.8 135c-12.4 7.1-20 20.4-20 34.6 0 14.3 7.6 27.5 20 34.6l233.8 135c6.2 3.6 13.1 5.4 20 5.4s13.8-1.8 20-5.4c12.4-7.1 20-20.3 20-34.6v-270c0-14.3-7.6-27.5-20-34.6z m-60 235.3l-113.8-65.7 113.8-65.7v131.4z" p-id="1778"></path>
         </svg>
       </button>
       <!--  > -->
@@ -114,6 +114,17 @@
               <svg t="1765371252511" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8826" width="20" height="20">
                 <path d="M890.7 95.8H134.9c-20.5 0-37.1 20.5-37.1 45.8V880c0 25.3 16.6 45.8 37.1 45.8h755.8c20.5 0 37.1-20.5 37.1-45.8V141.6c0-25.3-16.6-45.8-37.1-45.8z m-37.2 738.4H172V187.4h681.5v646.8z" p-id="8827"></path><path d="M343.6 550.2l129 0.4-0.4 129c-0.1 22.1 17.8 40.1 39.9 40.1h0.1c22 0 39.9-17.8 40-39.9l0.4-129 129 0.4h0.1c22 0 39.9-17.8 40-39.9 0.1-22.1-17.8-40.1-39.9-40.1l-129-0.4 0.4-129c0.1-22.1-17.8-40.1-39.9-40.1-22.1-0.1-40.1 17.8-40.1 39.9l-0.4 129-129-0.4h-0.1c-22 0-39.9 17.8-40 39.9 0 22.1 17.8 40.1 39.9 40.1z" p-id="8828"></path></svg>
             </span> 加入歌单
+          </button>
+          <button 
+            v-if="currentSong"
+            @click.stop="handleDownload" 
+            class="menu-item"
+          >
+            <span>
+              <svg t="1734163200000" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10000" width="20" height="20">
+                <path d="M505.7 661c3.2 4.5 9.7 4.5 12.9 0l128-181c3.8-5.3 0-12.7-6.5-12.7H528c-4.4 0-8-3.6-8-8V78c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v381.3c0 4.4-3.6 8-8 8H327.7c-6.5 0-10.3 7.4-6.5 12.7l128.1 181.1zM878 626h-60c-4.4 0-8 3.6-8 8v154H214V634c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v198c0 17.7 14.3 32 32 32h684c17.7 0 32-14.3 32-32V634c0-4.4-3.6-8-8-8z" p-id="10001"></path>
+              </svg>
+            </span> 下载
           </button>
           <button @click.stop="handleGoToLyrics" class="menu-item">
             <span>
@@ -677,10 +688,10 @@ const loadAndSyncLyric = async (songId) => {
   if (!songId) return
   
   try {
-    const { getLyric } = await import('../api/music')
-    const res = await getLyric(songId)
-    if (res.data.lrc && res.data.lrc.lyric) {
-      currentLyrics.value = parseLyric(res.data.lrc.lyric)
+    const { loadLyric } = await import('../utils/lyricLoader')
+    const lyricContent = await loadLyric(songId)
+    if (lyricContent) {
+      currentLyrics.value = parseLyric(lyricContent)
       if (currentLyrics.value.length > 0) {
         const firstLyric = currentLyrics.value[0].text
         currentLyricText.value = firstLyric
@@ -944,6 +955,49 @@ const handleAddToPlaylist = (event) => {
 const handleGoToLyrics = () => {
   showMoreMenu.value = false
   goToLyrics()
+}
+
+const handleDownload = async () => {
+  showMoreMenu.value = false
+  
+  if (!currentSong.value || !currentSong.value.id) {
+    console.error('没有当前歌曲')
+    return
+  }
+  
+  try {
+    const song = currentSong.value
+    
+    // 获取完整的歌曲信息
+    const { getSongDetail } = await import('../api/music')
+    const detailRes = await getSongDetail(song.id)
+    
+    if (!detailRes.data.songs || detailRes.data.songs.length === 0) {
+      console.error('无法获取歌曲详情')
+      return
+    }
+    
+    const songDetail = detailRes.data.songs[0]
+    
+    // 准备完整的歌曲数据（与 downloadStore 格式一致）
+    const songData = {
+      id: songDetail.id,
+      name: songDetail.name,
+      artists: songDetail.ar || [],
+      album: songDetail.al || {},
+      duration: songDetail.dt
+    }
+    
+    // 使用 downloadStore 进行下载
+    const { useDownloadStore } = await import('../stores/download')
+    const downloadStore = useDownloadStore()
+    const result = await downloadStore.downloadSong(songData)
+    
+    // downloadStore 内部已经处理了提示消息
+    // 包括"歌曲已下载，跳过"的警告提示
+  } catch (error) {
+    console.error('下载出错:', error)
+  }
 }
 
 const toggleFullscreenPlayer = () => {
@@ -1381,6 +1435,11 @@ const toggleFullscreenPlayer = () => {
   cursor: pointer;
   font-size: 16px;
   transition: all 0.3s;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .extra-btn:hover {
@@ -1485,9 +1544,8 @@ const toggleFullscreenPlayer = () => {
 }
 
 .playlist-btn {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
-  line-height: 1;
 }
 
 .playlist-modal {

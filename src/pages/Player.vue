@@ -51,7 +51,7 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { useThemeStore } from '../stores/theme'
-import { getLyric } from '../api/music'
+import { loadLyric } from '../utils/lyricLoader'
 import ParticleEffect from '../components/visual-effects/ParticleEffect.vue'
 import RippleEffect from '../components/visual-effects/RippleEffect.vue'
 import AuroraEffect from '../components/visual-effects/AuroraEffect.vue'
@@ -143,9 +143,9 @@ const currentEffectComponent = computed(() => {
 const loadLyrics = async (songId) => {
   if (!songId) return
   try {
-    const res = await getLyric(songId)
-    if (res.data.lrc && res.data.lrc.lyric) {
-      currentLyrics.value = parseLyric(res.data.lrc.lyric)
+    const lyricContent = await loadLyric(songId)
+    if (lyricContent) {
+      currentLyrics.value = parseLyric(lyricContent)
     } else {
       currentLyrics.value = []
     }

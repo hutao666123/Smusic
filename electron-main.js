@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, protocol } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, protocol, Tray, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const isDev = require('electron-is-dev')
@@ -23,6 +23,7 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow
 let desktopLyricWindow = null
+let tray = null
 let fileManager
 let playlistManager
 let downloadManager
@@ -58,12 +59,122 @@ function createWindow() {
   // 创建菜单
   createMenu()
 
+  // 监听窗口最大化事件
+  mainWindow.on('maximize', () => {
+    mainWindow.webContents.send('window-state-change', { isMaximized: true })
+  })
+
+  // 监听窗口还原事件
+  mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send('window-state-change', { isMaximized: false })
+  })
+
+  // 监听窗口关闭事件
+  mainWindow.on('close', (event) => {
+    // 如果是强制退出，直接关闭
+    if (app.isQuitting) {
+      return
+    }
+    
+    // 先阻止默认关闭行为
+    event.preventDefault()
+    
+    // 读取用户设置的关闭行为
+    mainWindow.webContents.executeJavaScript(
+      'localStorage.getItem("close-action")'
+    ).then(closeAction => {
+      if (closeAction === 'minimize-to-tray') {
+        // 最小化到托盘
+        mainWindow.hide()
+        
+        // 如果托盘还没创建，创建托盘
+        if (!tray) {
+          createTray()
+        }
+      } else {
+        // 正常关闭应用
+        app.isQuitting = true
+        mainWindow.close()
+      }
+    }).catch(err => {
+      console.error('读取关闭行为设置失败:', err)
+      // 出错时默认关闭应用
+      app.isQuitting = true
+      mainWindow.close()
+    })
+  })
+
   mainWindow.on('closed', () => {
     mainWindow = null
+    
     // 关闭桌面歌词窗口
     if (desktopLyricWindow) {
       desktopLyricWindow.close()
       desktopLyricWindow = null
+    }
+    
+    // 销毁托盘图标
+    if (tray) {
+      tray.destroy()
+      tray = null
+    }
+  })
+}
+
+// 创建系统托盘
+function createTray() {
+  if (tray) return
+  
+  // 创建托盘图标
+  const iconPath = path.join(__dirname, 'assets/icon.png')
+  const icon = nativeImage.createFromPath(iconPath)
+  tray = new Tray(icon.resize({ width: 16, height: 16 }))
+  
+  // 设置托盘提示
+  tray.setToolTip('Smusic')
+  
+  // 创建托盘菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示主窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+        }
+      }
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: '退出',
+      click: () => {
+        app.isQuitting = true
+        app.quit()
+      }
+    }
+  ])
+  
+  tray.setContextMenu(contextMenu)
+  
+  // 单击托盘图标显示窗口（Windows）
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide()
+      } else {
+        mainWindow.show()
+        mainWindow.focus()
+      }
+    }
+  })
+  
+  // 双击托盘图标显示窗口（macOS/Linux）
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      mainWindow.show()
+      mainWindow.focus()
     }
   })
 }
@@ -199,6 +310,18 @@ ipcMain.handle('get-user-data-path', () => {
   return app.getPath('userData')
 })
 
+// 打开外部链接
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    const { shell } = require('electron')
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error) {
+    console.error('打开外部链接失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 // 窗口控制
 ipcMain.on('window-minimize', () => {
   if (mainWindow) mainWindow.minimize()
@@ -288,14 +411,13 @@ ipcMain.on('sync-lyric', (event, lyricData) => {
 // 初始化管理器
 async function initializeManagers() {
   const userDataPath = app.getPath('userData')
-  // 下载路径改为项目根目录的 downloads 文件夹
-  const downloadPath = path.join(__dirname, 'downloads')
   
   fileManager = new FileManager(userDataPath)
   await fileManager.initDataDirectory()
   
   playlistManager = new PlaylistManager(fileManager)
-  downloadManager = new DownloadManager(fileManager, playlistManager, downloadPath)
+  // 不传递 downloadPath，使用默认的 fileManager.songsDir
+  downloadManager = new DownloadManager(fileManager, playlistManager)
   
   // 初始化默认数据文件（如果不存在）
   await initializeDefaultData()
@@ -644,6 +766,58 @@ function registerIpcHandlers() {
     }
   })
 
+  // ==================== 获取本地歌词 ====================
+  ipcMain.handle('get-local-lyric', async (event, songId) => {
+    try {
+      validateParams({ songId }, ['songId'])
+      
+      // 从下载列表中获取歌词路径
+      const result = await playlistManager.getDownloads()
+      
+      if (!result.success) {
+        return {
+          success: true,
+          data: null
+        }
+      }
+      
+      // 查找歌曲
+      const songIdStr = String(songId)
+      const song = result.data.songs.find(s => String(s.id) === songIdStr)
+      
+      if (!song || !song.lyricPath) {
+        return {
+          success: true,
+          data: null
+        }
+      }
+      
+      // 读取歌词文件
+      try {
+        const fsPromises = require('fs').promises
+        const lyricContent = await fsPromises.readFile(song.lyricPath, 'utf-8')
+        return {
+          success: true,
+          data: lyricContent
+        }
+      } catch (error) {
+        return {
+          success: true,
+          data: null
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'GET_LOCAL_LYRIC_ERROR',
+          message: '获取本地歌词失败',
+          details: error.message
+        }
+      }
+    }
+  })
+
   // ==================== 获取本地歌曲路径 ====================
   ipcMain.handle('get-local-song-path', async (event, songId) => {
     try {
@@ -711,6 +885,25 @@ function registerIpcHandlers() {
       } else {
         return createResponse(false, null, result.error)
       }
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // ==================== 打开下载目录 ====================
+  ipcMain.handle('open-downloads-folder', async () => {
+    try {
+      const { shell } = require('electron')
+      const downloadsDir = path.join(app.getPath('userData'), 'downloads')
+      
+      // 确保目录存在
+      if (!fs.existsSync(downloadsDir)) {
+        fs.mkdirSync(downloadsDir, { recursive: true })
+      }
+      
+      // 打开文件夹
+      await shell.openPath(downloadsDir)
+      return createResponse(true, { path: downloadsDir })
     } catch (error) {
       return createResponse(false, null, error)
     }
@@ -811,6 +1004,11 @@ app.on('ready', async () => {
 })
 
 app.on('window-all-closed', () => {
+  // 如果有托盘且不是强制退出，不退出应用
+  if (tray && !app.isQuitting) {
+    return
+  }
+  
   stopApiServer()
   if (process.platform !== 'darwin') {
     app.quit()
@@ -825,6 +1023,12 @@ app.on('activate', () => {
 
 // 应用退出前保存所有未写入的数据
 app.on('before-quit', async (event) => {
+  // 如果是强制退出，跳过
+  if (app.isQuitting) {
+    stopApiServer()
+    return
+  }
+  
   stopApiServer()
   
   if (fileManager) {

@@ -171,8 +171,9 @@ export const useDownloadStore = defineStore('download', () => {
 
       if (result.success) {
         // 检查是否跳过（已下载）
-        if (result.message && result.message.includes('已下载')) {
-          showWarning(result.message)
+        const message = result.data?.message || result.message
+        if (message && message.includes('已下载')) {
+          showWarning(message)
           // 移除任务
           downloadTasks.value.delete(taskId)
           downloadTasks.value = new Map(downloadTasks.value)
@@ -193,6 +194,11 @@ export const useDownloadStore = defineStore('download', () => {
           title: '下载完成',
           content: `${song.name} 已下载完成`
         })
+        
+        // 刷新已下载列表
+        const { usePlaylistStore } = await import('./playlist')
+        const playlistStore = usePlaylistStore()
+        await playlistStore.loadAllPlaylists()
         
         return { success: true, taskId }
       } else {

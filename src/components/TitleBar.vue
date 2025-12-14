@@ -27,20 +27,12 @@
         </button>
       </div>
 
-      <!-- 搜索框 -->
-      <div class="search-box">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24">
+      <!-- 搜索按钮 -->
+      <button class="search-button" @click="goToSearch" title="搜索">
+        <svg width="20" height="20" viewBox="0 0 24 24">
           <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
         </svg>
-        <input 
-          v-model="searchKeyword" 
-          type="text" 
-          placeholder="搜索音乐"
-          @keyup.enter="handleSearch"
-          @focus="searchFocused = true"
-          @blur="searchFocused = false"
-        />
-      </div>
+      </button>
 
       <!-- 设置按钮 -->
       <button class="settings-button" @click="goToSettings" title="设置">
@@ -57,10 +49,16 @@
           <rect fill="currentColor" width="10" height="1" x="1" y="6"/>
         </svg>
       </button>
-      <button class="title-bar-button" @click="maximize" title="最大化">
-        <svg width="12" height="12" viewBox="0 0 12 12">
+      <button class="title-bar-button" @click="maximize" :title="isMaximized ? '还原' : '最大化'">
+        <svg v-if="!isMaximized" width="12" height="12" viewBox="0 0 12 12">
           <rect width="9" height="9" x="1.5" y="1.5" stroke="currentColor" stroke-width="1" fill="none"/>
         </svg>
+        <!-- <svg v-else width="12" height="12" viewBox="0 0 12 12">
+          <rect width="7" height="7" x="2.5" y="2.5" stroke="currentColor" stroke-width="1" fill="none"/>
+          <path stroke="currentColor" stroke-width="1" d="M 2.5 2.5 L 2.5 1.5 L 10.5 1.5 L 10.5 9.5 L 9.5 9.5"/>
+        </svg> -->
+        <svg v-else t="1765688148176" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2879" width="20" height="20">
+          <path d="M784 80H240C152 80 80 152 80 240v544c0 88 72 160 160 160h544c88 0 160-72 160-160V240c0-88-72-160-160-160z m96 704c0 52.8-43.2 96-96 96h-96v-96c0-52.8 43.2-96 96-96h96v96z m0-160h-96c-88 0-160 72-160 160v96H240c-52.8 0-96-43.2-96-96V240c0-52.8 43.2-96 96-96h544c52.8 0 96 43.2 96 96v384z" fill="#4A576A" p-id="2880"></path><path d="M560 336c-17.6 0-32 14.4-32 32v115.2L302.4 257.6c-12.8-12.8-32-12.8-44.8 0-12.8 12.8-12.8 32 0 44.8L483.2 528H368c-17.6 0-32 14.4-32 32s14.4 32 32 32h192c9.6 0 17.6-3.2 22.4-9.6 6.4-6.4 9.6-14.4 9.6-22.4V368c0-17.6-14.4-32-32-32z" p-id="2881"></path></svg>
       </button>
       <button class="title-bar-button close" @click="close" title="关闭">
         <svg width="12" height="12" viewBox="0 0 12 12">
@@ -72,12 +70,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const searchKeyword = ref('')
-const searchFocused = ref(false)
+const isMaximized = ref(false)
 
 const goBack = () => {
   router.back()
@@ -91,13 +88,8 @@ const refresh = () => {
   router.go(0)
 }
 
-const handleSearch = () => {
-  if (searchKeyword.value.trim()) {
-    router.push({
-      path: '/search',
-      query: { keyword: searchKeyword.value.trim() }
-    })
-  }
+const goToSearch = () => {
+  router.push('/search')
 }
 
 const goToSettings = () => {
@@ -113,6 +105,8 @@ const minimize = () => {
 const maximize = () => {
   if (window.electron) {
     window.electron.maximize()
+    // 切换最大化状态
+    isMaximized.value = !isMaximized.value
   }
 }
 
@@ -121,6 +115,15 @@ const close = () => {
     window.electron.close()
   }
 }
+
+// 监听窗口最大化状态变化
+onMounted(() => {
+  if (window.electron && window.electron.onWindowStateChange) {
+    window.electron.onWindowStateChange((state) => {
+      isMaximized.value = state.isMaximized
+    })
+  }
+})
 </script>
 
 <style scoped>
@@ -206,13 +209,31 @@ const close = () => {
   transform: scale(0.95);
 }
 
-/* 搜索框 */
-.search-box {
-  position: absolute;
-  width: 300px;
+/* 搜索按钮 */
+.search-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
   -webkit-app-region: no-drag;
-  left: 50%;
-  margin-left: 80px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.search-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.search-button:active {
+  transform: scale(0.95);
 }
 
 /* 设置按钮 */
@@ -229,7 +250,6 @@ const close = () => {
   border-radius: 8px;
   transition: all 0.2s;
   -webkit-app-region: no-drag;
-  margin-left: auto;
 }
 
 .settings-button:hover {
@@ -239,37 +259,6 @@ const close = () => {
 
 .settings-button:active {
   transform: scale(0.95);
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.search-box input {
-  width: 100%;
-  height: 40px;
-  padding: 0 18px 0 44px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  color: white;
-  font-size: 14px;
-  outline: none;
-  transition: all 0.3s;
-}
-
-.search-box input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.search-box input:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* 窗口控制按钮 */

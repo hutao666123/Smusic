@@ -17,6 +17,9 @@ export const useThemeStore = defineStore('theme', () => {
   // 桌面歌词大小 (0.5 - 2.0)
   const desktopLyricSize = ref(1.0)
 
+  // 关闭行为：'quit' | 'minimize-to-tray'
+  const closeAction = ref('quit')
+
   // 播放页面和专注模式共享的视觉主题
   const playbackVisualTheme = ref('deep-space')
 
@@ -218,12 +221,14 @@ export const useThemeStore = defineStore('theme', () => {
     const savedAccentColor = localStorage.getItem('custom-accent-color')
     const savedLyricColor = localStorage.getItem('desktop-lyric-color')
     const savedLyricSize = localStorage.getItem('desktop-lyric-size')
+    const savedCloseAction = localStorage.getItem('close-action') || 'quit'
     const savedVisualTheme = localStorage.getItem('playback-visual-theme') || 'deep-space'
     theme.value = savedTheme
     customTextColor.value = savedTextColor
     customAccentColor.value = savedAccentColor
     desktopLyricColor.value = savedLyricColor
     desktopLyricSize.value = savedLyricSize ? parseFloat(savedLyricSize) : 1.0
+    closeAction.value = savedCloseAction
     playbackVisualTheme.value = savedVisualTheme
     applyTheme(savedTheme)
     if (savedTextColor) {
@@ -395,6 +400,12 @@ export const useThemeStore = defineStore('theme', () => {
     localStorage.setItem('desktop-lyric-size', size.toString())
   }
 
+  // 设置关闭行为
+  const setCloseAction = (action) => {
+    closeAction.value = action
+    localStorage.setItem('close-action', action)
+  }
+
   // 设置播放页面和专注模式的视觉主题
   const setPlaybackVisualTheme = (themeName) => {
     playbackVisualTheme.value = themeName
@@ -420,6 +431,7 @@ export const useThemeStore = defineStore('theme', () => {
     customAccentColor,
     desktopLyricColor,
     desktopLyricSize,
+    closeAction,
     playbackVisualTheme,
     visualThemes,
     currentVisualTheme,
@@ -429,6 +441,7 @@ export const useThemeStore = defineStore('theme', () => {
     setCustomAccentColor,
     setDesktopLyricColor,
     setDesktopLyricSize,
+    setCloseAction,
     setPlaybackVisualTheme
   }
 }, {
