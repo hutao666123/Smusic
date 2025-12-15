@@ -1,6 +1,6 @@
 {
   "name": "smusic",
-  "version": "1.0.0",
+  "version": "1.1",
   "description": "Smusic",
   "main": "electron-main.js",
   "updateUrl": "https://smusic-release.pages.dev//version.json",
