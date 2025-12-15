@@ -346,6 +346,115 @@ contextBridge.exposeInMainWorld('electron', {
    */
   openDownloadsFolder: () => ipcRenderer.invoke('open-downloads-folder'),
 
+  // ==================== 全局快捷键 ====================
+  /**
+   * 注册全局快捷键
+   * @param {Object} shortcuts - 快捷键配置
+   * @returns {Promise<Object>} - 操作结果
+   */
+  registerShortcuts: (shortcuts) => ipcRenderer.invoke('register-shortcuts', shortcuts),
+
+  /**
+   * 注销所有快捷键
+   * @returns {Promise<Object>} - 操作结果
+   */
+  unregisterShortcuts: () => ipcRenderer.invoke('unregister-shortcuts'),
+
+  /**
+   * 监听快捷键触发事件
+   * @param {Function} callback - 回调函数
+   * @returns {Function} - 取消监听的函数
+   */
+  onShortcutTriggered: (callback) => {
+    const listener = (event, action) => callback(action)
+    ipcRenderer.on('shortcut-triggered', listener)
+    return () => ipcRenderer.removeListener('shortcut-triggered', listener)
+  },
+
+  // ==================== 系统托盘控制 ====================
+  /**
+   * 更新托盘菜单状态
+   * @param {Object} state - 状态对象 { isPlaying, desktopLyricVisible }
+   */
+  updateTrayState: (state) => ipcRenderer.send('update-tray-state', state),
+
+  /**
+   * 监听托盘控制事件
+   * @param {Function} callback - 回调函数
+   * @returns {Function} - 取消监听的函数
+   */
+  onTrayControl: (callback) => {
+    const listener = (event, action) => callback(action)
+    ipcRenderer.on('tray-control', listener)
+    return () => ipcRenderer.removeListener('tray-control', listener)
+  },
+
+  /**
+   * 监听主进程请求同步状态到桌面歌词
+   * @param {Function} callback - 回调函数
+   * @returns {Function} - 取消监听的函数
+   */
+  onRequestSyncToDesktopLyric: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('request-sync-to-desktop-lyric', listener)
+    return () => ipcRenderer.removeListener('request-sync-to-desktop-lyric', listener)
+  },
+
+  // ==================== 本地音乐导入 ====================
+  /**
+   * 选择本地音频文件
+   * @returns {Promise<Object>} - { canceled, filePaths }
+   */
+  selectLocalAudioFiles: () => ipcRenderer.invoke('select-local-audio-files'),
+
+  /**
+   * 选择歌词文件
+   * @returns {Promise<Object>} - { canceled, filePath }
+   */
+  selectLyricFile: () => ipcRenderer.invoke('select-lyric-file'),
+
+  /**
+   * 获取音频文件元数据
+   * @param {string} filePath - 文件路径
+   * @returns {Promise<Object>} - 歌曲元数据
+   */
+  getAudioMetadata: (filePath) => ipcRenderer.invoke('get-audio-metadata', filePath),
+
+  /**
+   * 添加本地歌曲
+   * @param {Object} songData - 歌曲数据
+   * @returns {Promise<Object>} - 操作结果
+   */
+  addLocalSong: (songData) => ipcRenderer.invoke('add-local-song', songData),
+
+  /**
+   * 批量添加本地歌曲
+   * @param {Array} songsData - 歌曲数据数组
+   * @returns {Promise<Object>} - 操作结果
+   */
+  addLocalSongs: (songsData) => ipcRenderer.invoke('add-local-songs', songsData),
+
+  /**
+   * 更新歌曲歌词路径
+   * @param {string} songId - 歌曲 ID
+   * @param {string} lyricPath - 歌词文件路径
+   * @returns {Promise<Object>} - 操作结果
+   */
+  updateSongLyric: (songId, lyricPath) => ipcRenderer.invoke('update-song-lyric', songId, lyricPath),
+
+  /**
+   * 获取本地音乐列表
+   * @returns {Promise<Object>} - 本地音乐列表
+   */
+  getLocalSongs: () => ipcRenderer.invoke('get-local-songs'),
+
+  /**
+   * 移除本地歌曲
+   * @param {string} songId - 歌曲 ID
+   * @returns {Promise<Object>} - 操作结果
+   */
+  removeLocalSong: (songId) => ipcRenderer.invoke('remove-local-song', songId),
+
   // 暴露ipcRenderer用于调试和备选方案
   ipcRenderer: ipcRenderer
 })

@@ -46,15 +46,19 @@
 </template>
 
 <script setup>
-import { defineComponent, h, onMounted, ref, computed } from 'vue'
+import { defineComponent, h, onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useMessage, useDialog, useNotification, NModal, NSpin, NIcon } from 'naive-ui'
 import { setupNotification } from './utils/notification'
 import { useThemeStore } from './stores/theme'
+import { useShortcutsStore } from './stores/shortcuts'
+import { usePlayerStore } from './stores/player'
 import AppContentWrapper from './components/AppContentWrapper.vue'
 import './styles/theme.css'
 import './styles/accent-colors.css'
 
 const themeStore = useThemeStore()
+const shortcutsStore = useShortcutsStore()
+const playerStore = usePlayerStore()
 
 // API健康检查状态
 const showHealthCheck = ref(false)
@@ -163,6 +167,34 @@ const checkApiHealth = async () => {
   }
 }
 
+// 快捷键监听
+let unsubscribeShortcut = null
+let unsubscribeTrayControl = null
+
+// 注册快捷键到主进程
+const registerShortcuts = async () => {
+  try {
+    // 初始化快捷键配置
+    shortcutsStore.initShortcuts()
+    
+    // 只有全局模式才注册全局快捷键
+    if (shortcutsStore.shortcutMode === 'global') {
+      // 将 shortcuts 转换为纯对象，避免 Proxy 导致的克隆问题
+      const shortcutsData = JSON.parse(JSON.stringify(shortcutsStore.shortcuts))
+      const result = await window.electron.registerShortcuts(shortcutsData)
+      if (!result.success) {
+        console.error('注册快捷键失败:', result.error)
+      } else {
+        console.log('全局快捷键注册成功')
+      }
+    } else {
+      console.log('应用内快捷键模式，不注册全局快捷键')
+    }
+  } catch (error) {
+    console.error('注册快捷键异常:', error)
+  }
+}
+
 onMounted(() => {
   // 初始化主题
   themeStore.initTheme()
@@ -175,7 +207,63 @@ onMounted(() => {
     // 本次会话第一次启动，进行健康检查
     checkApiHealth()
   }
+  
+  // 注册全局快捷键
+  registerShortcuts()
+  
+  // 监听快捷键触发
+  unsubscribeShortcut = window.electron.onShortcutTriggered((action) => {
+    console.log('快捷键触发:', action)
+    handleShortcutAction(action)
+  })
+  
+  // 监听托盘控制事件
+  unsubscribeTrayControl = window.electron.onTrayControl((action) => {
+    console.log('托盘控制:', action)
+    handleTrayControl(action)
+  })
+  
+  // 监听播放状态变化，更新托盘菜单
+  watch(() => playerStore.isPlaying, (newValue) => {
+    window.electron.updateTrayState({ isPlaying: newValue })
+  }, { immediate: true })
 })
+
+// 清理
+onUnmounted(() => {
+  if (unsubscribeShortcut) {
+    unsubscribeShortcut()
+  }
+  if (unsubscribeTrayControl) {
+    unsubscribeTrayControl()
+  }
+  if (checkIntervalId) {
+    clearInterval(checkIntervalId)
+  }
+})
+
+// 处理快捷键动作
+const handleShortcutAction = (action) => {
+  // 通过自定义事件广播到全局
+  window.dispatchEvent(new CustomEvent('shortcut-action', { detail: { action } }))
+}
+
+// 处理托盘控制动作
+const handleTrayControl = (action) => {
+  switch (action) {
+    case 'toggle-play':
+      playerStore.togglePlay()
+      break
+    case 'previous':
+      playerStore.prev()
+      break
+    case 'next':
+      playerStore.next()
+      break
+    default:
+      console.warn('未知的托盘控制动作:', action)
+  }
+}
 </script>
 
 <style>

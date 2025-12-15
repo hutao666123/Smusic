@@ -12,7 +12,9 @@
     },
     "win": {
       "icon": "assets/icon.ico",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "files": [
       "dist/**/*",
@@ -61,6 +63,7 @@
   "dependencies": {
     "axios": "^1.5.0",
     "electron-is-dev": "^2.0.0",
+    "mp3-duration": "^1.1.0",
     "naive-ui": "^2.34.4",
     "node-id3": "^0.2.9",
     "pinia": "^2.1.6",

@@ -257,6 +257,103 @@
         </div>
       </div>
 
+      <!-- 快捷键设置 -->
+      <div class="settings-section">
+        <h2 class="section-title">快捷键</h2>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <span class="label-text">快捷键模式</span>
+            <span class="label-desc">选择快捷键的作用范围</span>
+          </div>
+          <div class="shortcut-mode-options">
+            <button 
+              class="mode-option"
+              :class="{ active: shortcutsStore.shortcutMode === 'global' }"
+              @click="handleModeChange('global')"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17V16H9V14H13V13H10A1,1 0 0,1 9,12V9A1,1 0 0,1 10,8H14V9H16V11H12V12H15A1,1 0 0,1 16,13V16A1,1 0 0,1 15,17H11Z"/>
+              </svg>
+              <div class="mode-text">
+                <span class="mode-name">全局快捷键</span>
+                <span class="mode-desc">窗口失焦也能用</span>
+              </div>
+            </button>
+            <button 
+              class="mode-option"
+              :class="{ active: shortcutsStore.shortcutMode === 'local' }"
+              @click="handleModeChange('local')"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/>
+              </svg>
+              <div class="mode-text">
+                <span class="mode-name">应用内快捷键</span>
+                <span class="mode-desc">仅窗口聚焦时</span>
+              </div>
+            </button>
+          </div>
+        </div>
+        
+        <div class="setting-item-vertical">
+          <div class="setting-header-with-action">
+            <div class="setting-label">
+              <span class="label-text">快捷键配置</span>
+              <span class="label-desc">
+                {{ shortcutsStore.shortcutMode === 'global' ? '全局快捷键在任何时候都能使用' : '应用内快捷键仅在窗口聚焦时生效' }}
+              </span>
+            </div>
+            <button @click="resetAllShortcuts" class="reset-all-btn-compact">
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.7C15.1,6.6 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C8.3,16.7 8.9,17.1 9.6,17.4L9,19.4C8,19 7.1,18.4 6.3,17.6Z"/>
+              </svg>
+              <span>重置</span>
+            </button>
+          </div>
+          
+          <div class="shortcuts-grid">
+            <div 
+              v-for="(config, action) in shortcutsStore.shortcuts" 
+              :key="action"
+              class="shortcut-item"
+            >
+              <div class="shortcut-info">
+                <span class="shortcut-label">{{ config.label }}</span>
+                <div class="shortcut-key-display">
+                  <kbd v-if="config.key">{{ formatShortcutKey(config.key) }}</kbd>
+                  <span v-else class="no-key">未设置</span>
+                </div>
+              </div>
+              <div class="shortcut-actions">
+                <button 
+                  @click="startEditShortcut(action)"
+                  class="edit-btn"
+                  title="修改"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                  </svg>
+                </button>
+                <button 
+                  @click="toggleShortcut(action)"
+                  class="toggle-btn"
+                  :class="{ active: config.enabled }"
+                  :title="config.enabled ? '禁用' : '启用'"
+                >
+                  <svg v-if="config.enabled" width="16" height="16" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M10,16.5L6,12.5L7.4,11.1L10,13.7L16.6,7.1L18,8.5L10,16.5Z"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 应用行为设置 -->
       <div class="settings-section">
         <h2 class="section-title">应用行为</h2>
@@ -315,14 +412,62 @@
         </div>
       </div>
     </div>
+
+    <!-- 快捷键编辑对话框 -->
+    <div v-if="showShortcutDialog" class="shortcut-dialog-overlay" @click.self="cancelEditShortcut">
+      <div class="shortcut-dialog">
+        <div class="dialog-header">
+          <h3>设置快捷键</h3>
+          <button @click="cancelEditShortcut" class="close-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="dialog-body">
+          <div class="dialog-label">
+            <span>{{ currentEditingAction ? shortcutsStore.shortcuts[currentEditingAction].label : '' }}</span>
+          </div>
+          
+          <div class="recording-area" :class="{ recording: isRecording }">
+            <div v-if="!isRecording && !recordedKey" class="recording-hint">
+              <svg width="48" height="48" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M20,18H4V8H20M20,6H4C2.89,6 2,6.89 2,8V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6M11,9H9V11H11M13,9H11V11H13M15,9H13V11H15M17,9H15V11H17M17,13H15V15H17M17,17H15V19H17M13,13H11V15H13M13,17H11V19H13M9,13H7V15H9M9,17H7V19H9Z"/>
+              </svg>
+              <p>点击下方按钮开始录制</p>
+            </div>
+            <div v-else-if="isRecording" class="recording-active">
+              <div class="recording-pulse"></div>
+              <p>请按下快捷键...</p>
+              <span class="recording-tip">按 ESC 取消</span>
+            </div>
+            <div v-else class="recorded-key">
+              <kbd>{{ formatShortcutKey(recordedKey) }}</kbd>
+            </div>
+          </div>
+          
+          <div v-if="shortcutError" class="dialog-error">{{ shortcutError }}</div>
+        </div>
+        <div class="dialog-footer">
+          <button @click="cancelEditShortcut" class="dialog-btn cancel-btn">取消</button>
+          <button v-if="recordedKey" @click="clearShortcut" class="dialog-btn clear-btn">清空</button>
+          <button v-if="!isRecording" @click="startRecording" class="dialog-btn record-btn">
+            {{ recordedKey ? '重新录制' : '开始录制' }}
+          </button>
+          <button v-if="recordedKey && !isRecording" @click="saveShortcut" class="dialog-btn save-btn">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '../stores/theme'
+import { useShortcutsStore } from '../stores/shortcuts'
 
 const themeStore = useThemeStore()
+const shortcutsStore = useShortcutsStore()
 
 // 从 package.json 读取配置
 import packageJson from '../../package.json'
@@ -556,6 +701,200 @@ const isValidColor = (color) => {
          rgbaPattern.test(color) || 
          gradientPattern.test(color)
 }
+
+// ==================== 快捷键设置 ====================
+const editingShortcut = ref(null)
+const recordingKeys = ref([])
+const shortcutDialog = ref(null)
+const showShortcutDialog = ref(false)
+const recordedKey = ref('')
+const shortcutError = ref('')
+const currentEditingAction = ref(null)
+const isRecording = ref(false)
+
+
+
+// 格式化快捷键显示
+const formatShortcutKey = (key) => {
+  if (!key) return ''
+  return key
+    .replace('CommandOrControl', 'Ctrl')
+    .replace('Command', 'Cmd')
+    .replace('Control', 'Ctrl')
+    .replace('Alt', 'Alt')
+    .replace('Shift', 'Shift')
+    .replace('Up', '↑')
+    .replace('Down', '↓')
+    .replace('Left', '←')
+    .replace('Right', '→')
+    .replace('+', ' + ')
+}
+
+// 开始编辑快捷键
+const startEditShortcut = (action) => {
+  currentEditingAction.value = action
+  recordedKey.value = ''
+  shortcutError.value = ''
+  isRecording.value = false
+  showShortcutDialog.value = true
+}
+
+// 开始录制快捷键
+const startRecording = () => {
+  isRecording.value = true
+  recordedKey.value = ''
+  shortcutError.value = ''
+  
+  // 添加键盘监听
+  window.addEventListener('keydown', handleRecordKeyDown)
+}
+
+// 停止录制
+const stopRecording = () => {
+  isRecording.value = false
+  window.removeEventListener('keydown', handleRecordKeyDown)
+}
+
+// 录制键盘按键
+const handleRecordKeyDown = (event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  
+  // 忽略单独的修饰键
+  if (['Control', 'Alt', 'Shift', 'Meta'].includes(event.key)) {
+    return
+  }
+  
+  // 构建按键组合
+  const keys = []
+  if (event.ctrlKey || event.metaKey) keys.push('CommandOrControl')
+  if (event.altKey) keys.push('Alt')
+  if (event.shiftKey) keys.push('Shift')
+  
+  // 特殊键处理
+  let keyName = event.key
+  if (keyName === ' ') {
+    keyName = 'Space'
+  } else if (keyName === 'ArrowUp') {
+    keyName = 'Up'
+  } else if (keyName === 'ArrowDown') {
+    keyName = 'Down'
+  } else if (keyName === 'ArrowLeft') {
+    keyName = 'Left'
+  } else if (keyName === 'ArrowRight') {
+    keyName = 'Right'
+  } else if (keyName === 'Escape') {
+    // ESC 键取消录制
+    stopRecording()
+    return
+  } else {
+    // 字母键统一转大写
+    keyName = keyName.toUpperCase()
+  }
+  
+  keys.push(keyName)
+  recordedKey.value = keys.join('+')
+  
+  // 停止录制
+  stopRecording()
+}
+
+// 保存快捷键
+const saveShortcut = () => {
+  const action = currentEditingAction.value
+  const newKey = recordedKey.value.trim()
+  
+  if (!newKey) {
+    shortcutError.value = '请先录制快捷键'
+    return
+  }
+  
+  // 检查冲突
+  const conflict = shortcutsStore.checkConflict(newKey, action)
+  if (conflict) {
+    const conflictLabel = shortcutsStore.shortcuts[conflict].label
+    shortcutError.value = `快捷键已被 "${conflictLabel}" 使用`
+    return
+  }
+  
+  // 更新快捷键
+  shortcutsStore.updateShortcut(action, { key: newKey, enabled: true })
+  registerShortcuts()
+  showShortcutDialog.value = false
+}
+
+// 清空快捷键
+const clearShortcut = () => {
+  const action = currentEditingAction.value
+  shortcutsStore.updateShortcut(action, { key: '', enabled: false })
+  registerShortcuts()
+  showShortcutDialog.value = false
+}
+
+// 取消编辑
+const cancelEditShortcut = () => {
+  stopRecording()
+  showShortcutDialog.value = false
+  recordedKey.value = ''
+  shortcutError.value = ''
+  currentEditingAction.value = null
+}
+
+// 切换快捷键启用状态
+const toggleShortcut = (action) => {
+  const config = shortcutsStore.shortcuts[action]
+  shortcutsStore.updateShortcut(action, { enabled: !config.enabled })
+  registerShortcuts()
+}
+
+// 重置所有快捷键
+const resetAllShortcuts = () => {
+  if (confirm('确定要重置所有快捷键到默认设置吗？')) {
+    shortcutsStore.resetShortcuts()
+    registerShortcuts()
+  }
+}
+
+// 切换快捷键模式
+const handleModeChange = async (mode) => {
+  console.log('切换快捷键模式:', mode)
+  shortcutsStore.setShortcutMode(mode)
+  
+  if (mode === 'global') {
+    // 切换到全局模式，注册全局快捷键
+    console.log('注册全局快捷键')
+    await registerShortcuts()
+  } else {
+    // 切换到应用内模式，注销全局快捷键
+    console.log('注销全局快捷键')
+    await window.electron.unregisterShortcuts()
+  }
+}
+
+// 注册快捷键到主进程
+const registerShortcuts = async () => {
+  try {
+    // 将 shortcuts 转换为纯对象，避免 Proxy 导致的克隆问题
+    const shortcutsData = JSON.parse(JSON.stringify(shortcutsStore.shortcuts))
+    const result = await window.electron.registerShortcuts(shortcutsData)
+    if (!result.success) {
+      console.error('注册快捷键失败:', result.error)
+    }
+  } catch (error) {
+    console.error('注册快捷键异常:', error)
+  }
+}
+
+// 初始化
+onMounted(() => {
+  shortcutsStore.initShortcuts()
+  registerShortcuts()
+})
+
+// 清理
+onUnmounted(() => {
+  window.electron.unregisterShortcuts()
+})
 </script>
 
 <style scoped>
@@ -1142,5 +1481,448 @@ const isValidColor = (color) => {
 
 .spin {
   animation: spin 1s linear infinite;
+}
+
+/* 快捷键设置样式 */
+.shortcut-mode-options {
+  display: flex;
+  gap: 12px;
+}
+
+.mode-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--button-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: var(--text-secondary);
+}
+
+.mode-option:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.mode-option.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.mode-option svg {
+  flex-shrink: 0;
+}
+
+.mode-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+}
+
+.mode-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mode-desc {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.setting-header-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .shortcuts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.shortcut-item:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.shortcut-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.shortcut-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.shortcut-key-display {
+  display: flex;
+  gap: 4px;
+}
+
+.shortcut-key-display kbd {
+  padding: 4px 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shortcut-key-display .no-key {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.shortcut-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn,
+.toggle-btn {
+  padding: 6px;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.edit-btn:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.toggle-btn:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.toggle-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.reset-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--button-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reset-all-btn:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.reset-all-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.reset-all-btn-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--button-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reset-all-btn-compact:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.reset-all-btn-compact svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 快捷键编辑对话框 */
+.shortcut-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.shortcut-dialog {
+  background: var(--card-bg);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dialog-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.close-btn {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.3s;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: var(--button-hover-bg);
+  color: var(--text-primary);
+}
+
+.dialog-body {
+  padding: 24px;
+}
+
+.dialog-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.recording-area {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  transition: all 0.3s;
+}
+
+.recording-area.recording {
+  border-color: var(--primary-color);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.recording-hint {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.recording-hint svg {
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+
+.recording-hint p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.recording-active {
+  text-align: center;
+  color: var(--primary-color);
+  position: relative;
+}
+
+.recording-pulse {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  margin: 0 auto 16px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.recording-active p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.recording-tip {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.recorded-key {
+  text-align: center;
+}
+
+.recorded-key kbd {
+  padding: 12px 24px;
+  background: var(--card-bg);
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  font-size: 18px;
+  font-family: monospace;
+  color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.dialog-error {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ff4444;
+  font-size: 13px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.dialog-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-btn {
+  background: var(--button-bg);
+  color: var(--text-secondary);
+}
+
+.cancel-btn:hover {
+  background: var(--button-hover-bg);
+  color: var(--text-primary);
+}
+
+.save-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.save-btn:hover {
+  background: var(--primary-hover-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.save-btn:active {
+  transform: translateY(0);
+}
+
+.record-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.record-btn:hover {
+  background: var(--primary-hover-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.clear-btn {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.clear-btn:hover {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #ff4444;
 }
 </style>

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, protocol, Tray, nativeImage } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, protocol, Tray, nativeImage, globalShortcut } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const isDev = require('electron-is-dev')
@@ -28,6 +28,33 @@ let fileManager
 let playlistManager
 let downloadManager
 let apiServerProcess = null
+let registeredShortcuts = new Map() // 存储已注册的快捷键
+let trayMenuState = {
+  isPlaying: false,
+  desktopLyricVisible: false
+} // 托盘菜单状态
+
+// 单实例锁定
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  // 如果没有获取到锁，说明已经有实例在运行，直接退出
+  app.quit()
+} else {
+  // 当第二个实例尝试启动时，触发此事件
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // 如果主窗口存在，显示并聚焦
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      if (!mainWindow.isVisible()) {
+        mainWindow.show()
+      }
+      mainWindow.focus()
+    }
+  })
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -134,29 +161,7 @@ function createTray() {
   tray.setToolTip('Smusic')
   
   // 创建托盘菜单
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: '显示主窗口',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.show()
-          mainWindow.focus()
-        }
-      }
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: '退出',
-      click: () => {
-        app.isQuitting = true
-        app.quit()
-      }
-    }
-  ])
-  
-  tray.setContextMenu(contextMenu)
+  updateTrayMenu()
   
   // 单击托盘图标显示窗口（Windows）
   tray.on('click', () => {
@@ -177,6 +182,78 @@ function createTray() {
       mainWindow.focus()
     }
   })
+}
+
+// 更新托盘菜单
+function updateTrayMenu() {
+  if (!tray) return
+  
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示主窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+        }
+      }
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: trayMenuState.isPlaying ? '暂停' : '播放',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('tray-control', 'toggle-play')
+        }
+      }
+    },
+    {
+      label: '上一首',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('tray-control', 'previous')
+        }
+      }
+    },
+    {
+      label: '下一首',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('tray-control', 'next')
+        }
+      }
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: trayMenuState.desktopLyricVisible ? '隐藏桌面歌词' : '显示桌面歌词',
+      click: () => {
+        if (trayMenuState.desktopLyricVisible) {
+          if (desktopLyricWindow) {
+            desktopLyricWindow.close()
+            desktopLyricWindow = null
+          }
+        } else {
+          createDesktopLyricWindow()
+        }
+      }
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: '退出',
+      click: () => {
+        app.isQuitting = true
+        app.quit()
+      }
+    }
+  ])
+  
+  tray.setContextMenu(contextMenu)
 }
 
 // 创建桌面歌词窗口
@@ -231,10 +308,17 @@ async function createDesktopLyricWindow() {
       lyricHoverCheckInterval = null
     }
     desktopLyricWindow = null
+    trayMenuState.desktopLyricVisible = false
+    updateTrayMenu()
   })
   
   // 启动鼠标悬停检测
   startLyricHoverCheck()
+  
+  // 通知主窗口同步当前播放状态和歌词到桌面歌词窗口
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('request-sync-to-desktop-lyric')
+  }
 }
 
 function createMenu() {
@@ -344,6 +428,8 @@ ipcMain.on('window-close', () => {
 // 桌面歌词窗口控制
 ipcMain.on('open-desktop-lyric', () => {
   createDesktopLyricWindow()
+  trayMenuState.desktopLyricVisible = true
+  updateTrayMenu()
 })
 
 ipcMain.on('close-desktop-lyric', () => {
@@ -351,6 +437,8 @@ ipcMain.on('close-desktop-lyric', () => {
     desktopLyricWindow.close()
     desktopLyricWindow = null
   }
+  trayMenuState.desktopLyricVisible = false
+  updateTrayMenu()
 })
 
 ipcMain.on('set-desktop-lyric-lock', (event, locked) => {
@@ -475,6 +563,61 @@ async function initializeDefaultData() {
     }
   } catch (error) {
     // 初始化失败
+  }
+}
+
+// ==================== 全局快捷键管理 ====================
+/**
+ * 注册全局快捷键
+ * @param {Object} shortcuts - 快捷键配置对象
+ */
+function registerGlobalShortcuts(shortcuts) {
+  // 先注销所有已注册的快捷键
+  unregisterAllShortcuts()
+  
+  if (!shortcuts || typeof shortcuts !== 'object') {
+    return
+  }
+
+  // 遍历快捷键配置并注册
+  for (const [action, config] of Object.entries(shortcuts)) {
+    if (!config.enabled || !config.key) continue
+    
+    try {
+      const success = globalShortcut.register(config.key, () => {
+        // 发送到渲染进程
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('shortcut-triggered', action)
+        }
+      })
+      
+      if (success) {
+        registeredShortcuts.set(action, config.key)
+      } else {
+        console.warn(`快捷键注册失败: ${action} -> ${config.key}`)
+      }
+    } catch (error) {
+      console.error(`注册快捷键失败 ${action}:`, error)
+    }
+  }
+}
+
+/**
+ * 注销所有快捷键
+ */
+function unregisterAllShortcuts() {
+  globalShortcut.unregisterAll()
+  registeredShortcuts.clear()
+  console.log('已注销所有快捷键')
+}
+
+/**
+ * 注销单个快捷键
+ * @param {string} accelerator - 快捷键字符串
+ */
+function unregisterShortcut(accelerator) {
+  if (accelerator) {
+    globalShortcut.unregister(accelerator)
   }
 }
 
@@ -771,21 +914,31 @@ function registerIpcHandlers() {
     try {
       validateParams({ songId }, ['songId'])
       
-      // 从下载列表中获取歌词路径
-      const result = await playlistManager.getDownloads()
+      let lyricPath = null
       
-      if (!result.success) {
-        return {
-          success: true,
-          data: null
+      // 先从下载列表中查找
+      const downloadsResult = await playlistManager.getDownloads()
+      if (downloadsResult.success) {
+        const songIdStr = String(songId)
+        const downloadedSong = downloadsResult.data.songs.find(s => String(s.id) === songIdStr)
+        if (downloadedSong && downloadedSong.lyricPath) {
+          lyricPath = downloadedSong.lyricPath
         }
       }
       
-      // 查找歌曲
-      const songIdStr = String(songId)
-      const song = result.data.songs.find(s => String(s.id) === songIdStr)
+      // 如果下载列表没找到，从本地音乐列表查找
+      if (!lyricPath) {
+        const localSongsResult = await playlistManager.getLocalSongs()
+        if (localSongsResult.success) {
+          const localSong = localSongsResult.data.songs.find(s => s.id === songId)
+          if (localSong && localSong.lyricPath) {
+            lyricPath = localSong.lyricPath
+          }
+        }
+      }
       
-      if (!song || !song.lyricPath) {
+      // 如果没有歌词路径，返回 null
+      if (!lyricPath) {
         return {
           success: true,
           data: null
@@ -795,7 +948,7 @@ function registerIpcHandlers() {
       // 读取歌词文件
       try {
         const fsPromises = require('fs').promises
-        const lyricContent = await fsPromises.readFile(song.lyricPath, 'utf-8')
+        const lyricContent = await fsPromises.readFile(lyricPath, 'utf-8')
         return {
           success: true,
           data: lyricContent
@@ -908,6 +1061,226 @@ function registerIpcHandlers() {
       return createResponse(false, null, error)
     }
   })
+
+  // ==================== 本地音乐导入 ====================
+  
+  // 选择本地音频文件
+  ipcMain.handle('select-local-audio-files', async () => {
+    try {
+      const { dialog } = require('electron')
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: '选择音频文件',
+        properties: ['openFile', 'multiSelections'],
+        filters: [
+          { name: '音频文件', extensions: ['mp3', 'flac', 'wav', 'm4a', 'aac', 'ogg', 'wma'] },
+          { name: '所有文件', extensions: ['*'] }
+        ]
+      })
+      
+      if (result.canceled) {
+        return createResponse(true, { canceled: true, filePaths: [] })
+      }
+      
+      return createResponse(true, { canceled: false, filePaths: result.filePaths })
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 选择歌词文件
+  ipcMain.handle('select-lyric-file', async () => {
+    try {
+      const { dialog } = require('electron')
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: '选择歌词文件',
+        properties: ['openFile'],
+        filters: [
+          { name: '歌词文件', extensions: ['lrc', 'txt'] },
+          { name: '所有文件', extensions: ['*'] }
+        ]
+      })
+      
+      if (result.canceled) {
+        return createResponse(true, { canceled: true, filePath: null })
+      }
+      
+      return createResponse(true, { canceled: false, filePath: result.filePaths[0] })
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 获取音频文件元数据
+  ipcMain.handle('get-audio-metadata', async (event, filePath) => {
+    try {
+      validateParams({ filePath }, ['filePath'])
+      
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        return createResponse(false, null, { message: '文件不存在' })
+      }
+      
+      // 使用 node-id3 读取元数据
+      const NodeID3 = require('node-id3')
+      const tags = NodeID3.read(filePath)
+      
+      // 获取文件大小
+      const stats = fs.statSync(filePath)
+      
+      // 计算音频时长（如果有 TLEN 标签）
+      let duration = 0
+      if (tags.length) {
+        // TLEN 是毫秒
+        duration = parseInt(tags.length)
+      }
+      
+      // 提取需要的信息
+      const artistName = tags.artist || '未知艺术家'
+      
+      const songData = {
+        name: tags.title || path.basename(filePath, path.extname(filePath)),
+        artists: [{ name: artistName }],
+        album: {
+          name: tags.album || '未知专辑',
+          picUrl: ''
+        },
+        duration: duration,
+        fileSize: stats.size,
+        localPath: filePath
+      }
+      
+      return createResponse(true, songData)
+    } catch (error) {
+      // 如果读取元数据失败，返回基本信息
+      try {
+        const stats = fs.statSync(filePath)
+        const songData = {
+          name: path.basename(filePath, path.extname(filePath)),
+          artists: [{ name: '未知艺术家' }],
+          album: { name: '未知专辑', picUrl: '' },
+          duration: 0,
+          fileSize: stats.size,
+          localPath: filePath
+        }
+        return createResponse(true, songData)
+      } catch (err) {
+        return createResponse(false, null, error)
+      }
+    }
+  })
+
+  // 添加本地歌曲
+  ipcMain.handle('add-local-song', async (event, songData) => {
+    try {
+      validateParams({ songData }, ['songData'])
+      
+      const result = await playlistManager.addLocalSong(songData)
+      
+      if (!result.success) {
+        return result
+      }
+      
+      return createResponse(true, result.data)
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 批量添加本地歌曲
+  ipcMain.handle('add-local-songs', async (event, songsData) => {
+    try {
+      validateParams({ songsData }, ['songsData'])
+      
+      const result = await playlistManager.addLocalSongs(songsData)
+      
+      if (!result.success) {
+        return result
+      }
+      
+      return createResponse(true, result.data)
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 更新歌曲歌词路径
+  ipcMain.handle('update-song-lyric', async (event, songId, lyricPath) => {
+    try {
+      validateParams({ songId, lyricPath }, ['songId', 'lyricPath'])
+      
+      const result = await playlistManager.updateLocalSongLyric(songId, lyricPath)
+      
+      if (!result.success) {
+        return result
+      }
+      
+      return createResponse(true, result.data)
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 获取本地音乐列表
+  ipcMain.handle('get-local-songs', async () => {
+    try {
+      const result = await playlistManager.getLocalSongs()
+      
+      if (!result.success) {
+        return result
+      }
+      
+      return createResponse(true, result.data)
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 移除本地歌曲
+  ipcMain.handle('remove-local-song', async (event, songId) => {
+    try {
+      validateParams({ songId }, ['songId'])
+      
+      const result = await playlistManager.removeLocalSong(songId)
+      
+      if (!result.success) {
+        return result
+      }
+      
+      return createResponse(true, result.data)
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // ==================== 全局快捷键 ====================
+  ipcMain.handle('register-shortcuts', async (event, shortcuts) => {
+    try {
+      registerGlobalShortcuts(shortcuts)
+      return createResponse(true, { registered: registeredShortcuts.size })
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  ipcMain.handle('unregister-shortcuts', async () => {
+    try {
+      unregisterAllShortcuts()
+      return createResponse(true)
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // ==================== 托盘菜单状态更新 ====================
+  ipcMain.on('update-tray-state', (event, state) => {
+    if (state.isPlaying !== undefined) {
+      trayMenuState.isPlaying = state.isPlaying
+    }
+    if (state.desktopLyricVisible !== undefined) {
+      trayMenuState.desktopLyricVisible = state.desktopLyricVisible
+    }
+    updateTrayMenu()
+  })
 }
 
 // 启动 API 服务
@@ -1009,6 +1382,9 @@ app.on('window-all-closed', () => {
     return
   }
   
+  // 注销所有快捷键
+  unregisterAllShortcuts()
+  
   stopApiServer()
   if (process.platform !== 'darwin') {
     app.quit()
@@ -1025,10 +1401,12 @@ app.on('activate', () => {
 app.on('before-quit', async (event) => {
   // 如果是强制退出，跳过
   if (app.isQuitting) {
+    unregisterAllShortcuts()
     stopApiServer()
     return
   }
   
+  unregisterAllShortcuts()
   stopApiServer()
   
   if (fileManager) {

@@ -46,13 +46,22 @@
               播放全部
             </button>
             <button
-              v-if="!isDownloadsPlaylist"
+              v-if="!isDownloadsPlaylist && !isLocalImportedPlaylist"
               @click="downloadAll"
               class="download-all-btn"
               :disabled="songs.length === 0"
             >
               <span class="download-icon">⬇</span>
               下载全部
+            </button>
+            <button
+              v-if="isLocalImportedPlaylist"
+              @click="importLocalSongs"
+              class="import-btn"
+              title="从本地文件夹导入音乐文件"
+            >
+              <span class="import-icon">➕</span>
+              导入歌曲
             </button>
             <button
               v-if="isDownloadsPlaylist"
@@ -127,9 +136,19 @@
                 </svg>
               </button>
 
+              <!-- 设置歌词按钮（仅本地音乐） -->
+              <button
+                v-if="isLocalImportedPlaylist"
+                @click.stop="setLyric(song)"
+                class="action-btn lyric-btn"
+                :title="song.lyricPath ? '更改歌词' : '设置歌词(支持LRC，TXT文件)'"
+              >
+                <span class="lyric-icon">{{ song.lyricPath ? '📝' : '📄' }}</span>
+              </button>
+
               <!-- 下载按钮 -->
               <button
-                v-if="!isDownloadsPlaylist && !isDownloaded(song.id)"
+                v-if="!isDownloadsPlaylist && !isLocalImportedPlaylist && !isDownloaded(song.id)"
                 @click.stop="downloadSong(song)"
                 class="action-btn download-btn"
                 title="下载"
@@ -145,7 +164,7 @@
               <button
                 @click.stop="confirmRemoveSong(song)"
                 class="action-btn delete-btn"
-                :title="isDownloadsPlaylist ? '删除（同时删除本地文件）' : '从歌单移除'"
+                :title="isDownloadsPlaylist ? '删除（不会删除本地文件）' : '从歌单移除'"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -282,6 +301,10 @@ const isDownloadsPlaylist = computed(() => {
   return route.params.id === 'local-downloads'
 })
 
+const isLocalImportedPlaylist = computed(() => {
+  return route.params.id === 'local-imported'
+})
+
 const coverClass = computed(() => {
   if (isFavoritesPlaylist.value) return 'favorites-cover'
   if (isDownloadsPlaylist.value) return 'downloads-cover'
@@ -391,8 +414,8 @@ const loadPlaylist = async () => {
 const playAll = () => {
   if (songs.value.length === 0) return
 
-  // 设置播放模式：如果是已下载歌单，强制本地播放
-  playerStore.forceLocalMode = isDownloadsPlaylist.value
+  // 设置播放模式：如果是已下载歌单或本地音乐，强制本地播放
+  playerStore.forceLocalMode = isDownloadsPlaylist.value || isLocalImportedPlaylist.value
 
   playerStore.clearPlaylist()
   songs.value.forEach(song => {
@@ -415,8 +438,8 @@ const playSong = (song, displayIndex) => {
   // 找到歌曲在完整列表中的真实索引
   const realIndex = songs.value.findIndex(s => s.id === song.id)
   
-  // 设置播放模式：如果是已下载歌单，强制本地播放
-  playerStore.forceLocalMode = isDownloadsPlaylist.value
+  // 设置播放模式：如果是已下载歌单或本地音乐，强制本地播放
+  playerStore.forceLocalMode = isDownloadsPlaylist.value || isLocalImportedPlaylist.value
   
   playerStore.clearPlaylist()
   
@@ -714,6 +737,46 @@ const createFavoriteAnimation = (event) => {
     }, 700 + i * 40)
   }
 }
+
+// 导入本地歌曲
+const importLocalSongs = async () => {
+  try {
+    const result = await window.electron.selectLocalAudioFiles()
+    
+    if (result.success && !result.data.canceled && result.data.filePaths.length > 0) {
+      showToast('正在导入歌曲...', 'info')
+      
+      const importResult = await playlistStore.importLocalSongs(result.data.filePaths)
+      
+      if (importResult.success) {
+        // 重新加载歌单
+        await loadPlaylist()
+      }
+    }
+  } catch (error) {
+    console.error('导入本地歌曲失败:', error)
+    showToast('导入失败', 'error')
+  }
+}
+
+// 设置歌词
+const setLyric = async (song) => {
+  try {
+    const result = await window.electron.selectLyricFile()
+    
+    if (result.success && !result.data.canceled && result.data.filePath) {
+      const updateResult = await playlistStore.updateSongLyric(song.id, result.data.filePath)
+      
+      if (updateResult) {
+        // 重新加载歌单
+        await loadPlaylist()
+      }
+    }
+  } catch (error) {
+    console.error('设置歌词失败:', error)
+    showToast('设置歌词失败', 'error')
+  }
+}
 </script>
 
 <style scoped>
@@ -880,11 +943,12 @@ const createFavoriteAnimation = (event) => {
 
 .play-all-btn,
 .download-all-btn,
-.open-folder-btn {
+.open-folder-btn,
+.import-btn {
   border: none;
   color: white;
-  padding: 10px 24px;
-  border-radius: 8px;
+  padding: 10px 28px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
@@ -962,6 +1026,42 @@ const createFavoriteAnimation = (event) => {
 
 .open-folder-btn:active {
   transform: translateY(0);
+}
+
+.import-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+  min-width: 140px;
+  justify-content: center;
+}
+
+.import-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: left 0.3s ease;
+  z-index: 0;
+}
+
+.import-btn:hover::before {
+  left: 100%;
+}
+
+.import-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+
+.import-btn:active {
+  transform: translateY(0);
+}
+
+.import-icon {
+  font-size: 16px;
 }
 
 .play-all-btn:disabled,
@@ -1181,6 +1281,19 @@ const createFavoriteAnimation = (event) => {
 .delete-btn:hover {
   background: rgba(239, 68, 68, 0.8);
   transform: scale(1.1);
+}
+
+.lyric-btn {
+  background: rgba(245, 158, 11, 0.5);
+}
+
+.lyric-btn:hover {
+  background: rgba(245, 158, 11, 0.8);
+  transform: scale(1.1);
+}
+
+.lyric-icon {
+  font-size: 14px;
 }
 
 .favorite-btn-list {

@@ -25,7 +25,7 @@
       </div>
 
       <div class="lyrics-section" @click.stop>
-        <div class="lyrics-container" ref="lyricsContainer">
+        <div class="lyrics-container" ref="lyricsContainer" @scroll="handleUserScroll">
           <div class="lyrics-spacer"></div>
           <div
             v-for="(lyric, index) in currentLyrics"
@@ -33,6 +33,7 @@
             :class="['lyric-line', { active: index === currentLyricIndex }]"
             :style="{ color: index === currentLyricIndex ? (visualTheme?.lyricColors.active || '#fff') : (visualTheme?.lyricColors.upcoming || 'rgba(255,255,255,0.5)') }"
             :ref="el => { if (index === currentLyricIndex) activeLyricEl = el }"
+            @click="seekToTime(lyric.time)"
           >
             {{ lyric.text }}
           </div>
@@ -47,11 +48,12 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { useThemeStore } from '../stores/theme'
 import { loadLyric } from '../utils/lyricLoader'
+import audioPlayer from '../services/audioPlayer'
 import ParticleEffect from '../components/visual-effects/ParticleEffect.vue'
 import RippleEffect from '../components/visual-effects/RippleEffect.vue'
 import AuroraEffect from '../components/visual-effects/AuroraEffect.vue'
@@ -70,6 +72,11 @@ const currentLyrics = ref([])
 const currentLyricIndex = ref(0)
 const lyricsContainer = ref(null)
 const activeLyricEl = ref(null)
+
+// 用户滚动控制
+const isUserScrolling = ref(false)
+let scrollTimer = null
+let isScrollingByUser = false
 
 // 当前视觉主题(与播放页面共享)
 const visualTheme = computed(() => themeStore.currentVisualTheme)
@@ -104,21 +111,6 @@ const albumGlowStyle = computed(() => {
   if (!visualTheme.value) return {}
   return {
     boxShadow: `0 20px 60px rgba(0, 0, 0, 0.8), 0 0 60px ${visualTheme.value.vinylGlow}`
-  }
-})
-
-// 歌词样式
-const lyricActiveStyle = computed(() => {
-  if (!visualTheme.value) return {}
-  return {
-    color: visualTheme.value.lyricColors.active
-  }
-})
-
-const lyricInactiveStyle = computed(() => {
-  if (!visualTheme.value) return {}
-  return {
-    color: visualTheme.value.lyricColors.upcoming
   }
 })
 
@@ -179,15 +171,58 @@ const parseLyric = (lyricText) => {
   return result.sort((a, b) => a.time - b.time)
 }
 
+// 处理用户滚动
+const handleUserScroll = () => {
+  // 只有在非程序触发的滚动时才标记为用户滚动
+  if (!isScrollingByUser) {
+    isUserScrolling.value = true
+
+    // 清除之前的定时器
+    if (scrollTimer) {
+      clearTimeout(scrollTimer)
+    }
+
+    // 5秒后恢复自动滚动
+    scrollTimer = setTimeout(() => {
+      isUserScrolling.value = false
+    }, 5000)
+  }
+}
+
+// 点击歌词跳转到指定时间
+const seekToTime = (time) => {
+  playerStore.setCurrentTime(time)
+  audioPlayer.setCurrentTime(time)
+  // 点击歌词后，标记为用户操作，5秒后才恢复自动滚动
+  isUserScrolling.value = true
+  if (scrollTimer) {
+    clearTimeout(scrollTimer)
+  }
+  scrollTimer = setTimeout(() => {
+    isUserScrolling.value = false
+  }, 5000)
+  isScrollingByUser = true
+  setTimeout(() => {
+    isScrollingByUser = false
+  }, 1000)
+}
+
 // 监听当前歌曲变化
 watch(currentSong, (newSong) => {
   if (newSong?.id) {
     loadLyrics(newSong.id)
+    // 重置滚动状态
+    isUserScrolling.value = false
+    if (scrollTimer) {
+      clearTimeout(scrollTimer)
+    }
   }
 }, { immediate: true })
 
-// 监听播放时间，更新当前歌词并居中滚动
-watch(currentTime, async (time) => {
+// 监听播放时间，更新当前歌词
+watch(currentTime, (time) => {
+  if (currentLyrics.value.length === 0) return
+
   let index = 0
   for (let i = currentLyrics.value.length - 1; i >= 0; i--) {
     if (time >= currentLyrics.value[i].time) {
@@ -197,17 +232,23 @@ watch(currentTime, async (time) => {
   }
   currentLyricIndex.value = index
   
-  // 歌词居中滚动
-  await nextTick()
-  if (activeLyricEl.value && lyricsContainer.value) {
-    const container = lyricsContainer.value
-    const activeEl = activeLyricEl.value
-    const containerHeight = container.clientHeight
-    const scrollTop = activeEl.offsetTop - containerHeight * 0.38 + activeEl.clientHeight / 2
-    container.scrollTo({
-      top: scrollTop,
-      behavior: 'smooth'
-    })
+  // 只有在用户没有滚动时才自动滚动到当前行
+  if (!isUserScrolling.value && lyricsContainer.value) {
+    isScrollingByUser = true
+    const activeElement = lyricsContainer.value.querySelector('.lyric-line.active')
+    if (activeElement) {
+      const container = lyricsContainer.value
+      const containerHeight = container.clientHeight
+      const scrollTop = activeElement.offsetTop - containerHeight * 0.38 + activeElement.clientHeight / 2
+      container.scrollTo({
+        top: scrollTop,
+        behavior: 'smooth'
+      })
+    }
+    // 增加延迟时间，确保滚动动画完成
+    setTimeout(() => {
+      isScrollingByUser = false
+    }, 1000)
   }
 })
 
@@ -215,6 +256,13 @@ watch(currentTime, async (time) => {
 const goBack = () => {
   router.back()
 }
+
+// 清理定时器
+onUnmounted(() => {
+  if (scrollTimer) {
+    clearTimeout(scrollTimer)
+  }
+})
 </script>
 
 <style scoped>

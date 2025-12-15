@@ -48,6 +48,17 @@
           <span v-if="playlistStore.downloads.length > 0" class="count">{{ playlistStore.downloads.length }}</span>
         </router-link>
         <router-link 
+          to="/local-playlist/local-imported" 
+          class="menu-item" 
+          :class="{ active: isActive('/local-playlist/local-imported') }"
+        >
+          <span class="icon">
+            <svg t="1765372783682" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="16712" width="20" height="20"><path d="M512 85.333333c235.648 0 426.666667 191.018667 426.666667 426.666667s-191.018667 426.666667-426.666667 426.666667S85.333333 747.648 85.333333 512 276.352 85.333333 512 85.333333z m0 85.333334a341.333333 341.333333 0 1 0 0 682.666666 341.333333 341.333333 0 0 0 0-682.666666z m42.666667 128a42.666667 42.666667 0 0 1 42.666666 42.666666v128h128a42.666667 42.666667 0 0 1 0 85.333334h-128v128a42.666667 42.666667 0 0 1-85.333333 0v-128h-128a42.666667 42.666667 0 0 1 0-85.333334h128v-128a42.666667 42.666667 0 0 1 42.666667-42.666666z" p-id="16713"></path></svg>
+          </span>
+          <span class="label">本地音乐</span>
+          <span v-if="playlistStore.localSongs.length > 0" class="count">{{ playlistStore.localSongs.length }}</span>
+        </router-link>
+        <router-link 
           to="/collected-playlists" 
           class="menu-item" 
           :class="{ active: isActive('/collected-playlists') }"

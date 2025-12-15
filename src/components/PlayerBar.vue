@@ -228,11 +228,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch, ref, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, watch, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { usePlaylistStore } from '../stores/playlist'
 import { useThemeStore } from '../stores/theme'
+import { useShortcutsStore } from '../stores/shortcuts'
 import { getSongDetail } from '../api/music'
 import audioPlayer from '../services/audioPlayer'
 import AddToPlaylistDialog from './AddToPlaylistDialog.vue'
@@ -322,6 +323,12 @@ onMounted(() => {
   // 检查文本溢出
   checkTextOverflow()
   
+  // 监听全局快捷键事件
+  window.addEventListener('shortcut-action', handleShortcutEvent)
+  
+  // 监听应用内键盘事件
+  window.addEventListener('keydown', handleKeyDown)
+  
   // 恢复播放状态：如果有播放列表和当前歌曲
   if (playerStore.playlist.length > 0 && playerStore.currentSong) {
     const savedTime = playerStore.currentTime
@@ -401,6 +408,18 @@ onMounted(() => {
     }
   })
 
+  // 监听主进程请求同步状态到桌面歌词
+  if (window.electron.onRequestSyncToDesktopLyric) {
+    window.electron.onRequestSyncToDesktopLyric(() => {
+      // 同步播放状态
+      syncToDesktopLyric()
+      // 同步歌词
+      if (currentSong.value?.id) {
+        loadAndSyncLyric(currentSong.value.id)
+      }
+    })
+  }
+
   // 点击外部关闭更多菜单
   document.addEventListener('click', (e) => {
     const moreMenuContainer = document.querySelector('.more-menu-container')
@@ -409,6 +428,110 @@ onMounted(() => {
     }
   })
 })
+
+// 清理
+onUnmounted(() => {
+  window.removeEventListener('shortcut-action', handleShortcutEvent)
+  window.removeEventListener('keydown', handleKeyDown)
+})
+
+// 处理快捷键事件
+const handleShortcutEvent = (event) => {
+  const { action } = event.detail
+  
+  switch (action) {
+    case 'playPause':
+      togglePlay()
+      break
+    case 'nextTrack':
+      next()
+      break
+    case 'prevTrack':
+      prev()
+      break
+    case 'volumeUp':
+      adjustVolume(0.1)
+      break
+    case 'volumeDown':
+      adjustVolume(-0.1)
+      break
+    case 'toggleLike':
+      if (currentSong.value) {
+        toggleFavorite()
+      }
+      break
+    case 'downloadCurrent':
+      if (currentSong.value) {
+        handleDownload()
+      }
+      break
+    case 'addToPlaylist':
+      if (currentSong.value) {
+        handleAddToPlaylist()
+      }
+      break
+  }
+}
+
+// 调整音量
+const adjustVolume = (delta) => {
+  const newVolume = Math.max(0, Math.min(1, volume.value + delta))
+  playerStore.setVolume(newVolume)
+  audioPlayer.setVolume(newVolume)
+}
+
+// 处理应用内键盘事件
+const handleKeyDown = (event) => {
+  // 导入 shortcuts store
+  const shortcutsStore = useShortcutsStore()
+  
+  // 只在应用内模式下处理
+  if (shortcutsStore.shortcutMode !== 'local') return
+  
+  // 如果焦点在输入框，不处理
+  const target = event.target
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    return
+  }
+  
+  // 构建按键组合字符串
+  const keys = []
+  if (event.ctrlKey || event.metaKey) keys.push('CommandOrControl')
+  if (event.altKey) keys.push('Alt')
+  if (event.shiftKey) keys.push('Shift')
+  
+  // 特殊键处理
+  let keyName = event.key
+  if (keyName === ' ') {
+    keyName = 'Space'
+  } else if (keyName === 'ArrowUp') {
+    keyName = 'Up'
+  } else if (keyName === 'ArrowDown') {
+    keyName = 'Down'
+  } else if (keyName === 'ArrowLeft') {
+    keyName = 'Left'
+  } else if (keyName === 'ArrowRight') {
+    keyName = 'Right'
+  } else {
+    // 字母键统一转大写
+    keyName = keyName.toUpperCase()
+  }
+  
+  keys.push(keyName)
+  const keyCombo = keys.join('+')
+  
+  console.log('按键组合:', keyCombo)
+  
+  // 查找匹配的快捷键
+  for (const [action, config] of Object.entries(shortcutsStore.shortcuts)) {
+    if (config.enabled && config.key === keyCombo) {
+      console.log('匹配到快捷键:', action)
+      event.preventDefault()
+      handleShortcutEvent({ detail: { action } })
+      break
+    }
+  }
+}
 
 // 检查文本是否溢出
 const checkTextOverflow = () => {

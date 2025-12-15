@@ -8,6 +8,7 @@ export const usePlaylistStore = defineStore('playlist', () => {
   const customPlaylists = ref([])
   const collectedPlaylists = ref([])
   const downloads = ref([])
+  const localSongs = ref([])
   const loading = ref(false)
   const error = ref(null)
 
@@ -25,6 +26,14 @@ export const usePlaylistStore = defineStore('playlist', () => {
       id: 'local-downloads',
       name: '已下载',
       songs: downloads.value,
+      type: 'system',
+      createTime: Date.now(),
+      updateTime: Date.now()
+    },
+    {
+      id: 'local-imported',
+      name: '本地音乐',
+      songs: localSongs.value,
       type: 'system',
       createTime: Date.now(),
       updateTime: Date.now()
@@ -68,6 +77,13 @@ export const usePlaylistStore = defineStore('playlist', () => {
                      downloadsResult.data?.data?.songs || 
                      downloadsResult.data?.songs || []
         downloads.value = songs
+      }
+
+      // 加载本地音乐
+      const localSongsResult = await window.electron.getLocalSongs()
+      if (localSongsResult.success) {
+        const songs = localSongsResult.data?.songs || []
+        localSongs.value = songs
       }
 
       return true
@@ -240,6 +256,9 @@ export const usePlaylistStore = defineStore('playlist', () => {
     if (playlistId === 'local-downloads') {
       return allLocalPlaylists.value[1]
     }
+    if (playlistId === 'local-imported') {
+      return allLocalPlaylists.value[2]
+    }
     if (!Array.isArray(customPlaylists.value)) {
       return null
     }
@@ -306,6 +325,20 @@ export const usePlaylistStore = defineStore('playlist', () => {
     loading.value = true
     error.value = null
     try {
+      // 如果是本地音乐歌单，使用专门的删除方法
+      if (playlistId === 'local-imported') {
+        const result = await window.electron.removeLocalSong(songId)
+        if (result.success) {
+          localSongs.value = result.data.songs || []
+          showSuccess('已从本地音乐中移除')
+          return true
+        } else {
+          error.value = result.error?.message || '移除歌曲失败'
+          showError(error.value)
+          return false
+        }
+      }
+      
       const result = await window.electron.removeSongFromPlaylist(playlistId, songId)
       if (result.success) {
         // 更新对应的歌单
@@ -572,6 +605,80 @@ export const usePlaylistStore = defineStore('playlist', () => {
     return collectedPlaylists.value.some(p => p.id === playlistId)
   }
 
+  // ========== 本地音乐导入 ==========
+
+  // 导入本地歌曲
+  const importLocalSongs = async (filePaths) => {
+    loading.value = true
+    error.value = null
+    try {
+      const songsData = []
+      
+      // 读取每个文件的元数据
+      for (const filePath of filePaths) {
+        try {
+          const metadataResult = await window.electron.getAudioMetadata(filePath)
+          if (metadataResult.success) {
+            songsData.push(metadataResult.data)
+          }
+        } catch (err) {
+          console.error(`读取文件元数据失败: ${filePath}`, err)
+        }
+      }
+      
+      if (songsData.length === 0) {
+        showError('没有可导入的歌曲')
+        return { success: false, added: 0, skipped: 0 }
+      }
+      
+      // 批量添加
+      const result = await window.electron.addLocalSongs(songsData)
+      if (result.success) {
+        localSongs.value = result.data.playlist.songs || []
+        const added = result.data.addedCount || 0
+        const skipped = result.data.skippedCount || 0
+        showSuccess(`成功导入 ${added} 首歌曲${skipped > 0 ? `，跳过 ${skipped} 首重复歌曲` : ''}`)
+        return { success: true, added, skipped }
+      } else {
+        error.value = result.error?.message || '导入失败'
+        showError(error.value)
+        return { success: false, added: 0, skipped: 0 }
+      }
+    } catch (err) {
+      error.value = err.message || '导入本地歌曲失败'
+      console.error('导入本地歌曲失败:', err)
+      showError(error.value)
+      return { success: false, added: 0, skipped: 0 }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 更新歌曲歌词
+  const updateSongLyric = async (songId, lyricPath) => {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await window.electron.updateSongLyric(songId, lyricPath)
+      if (result.success) {
+        localSongs.value = result.data.songs || []
+        showSuccess('歌词设置成功')
+        return true
+      } else {
+        error.value = result.error?.message || '设置歌词失败'
+        showError(error.value)
+        return false
+      }
+    } catch (err) {
+      error.value = err.message || '设置歌词失败'
+      console.error('设置歌词失败:', err)
+      showError(error.value)
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 清除错误
   const clearError = () => {
     error.value = null
@@ -583,6 +690,7 @@ export const usePlaylistStore = defineStore('playlist', () => {
     customPlaylists,
     collectedPlaylists,
     downloads,
+    localSongs,
     loading,
     error,
     // 计算属性
@@ -607,6 +715,9 @@ export const usePlaylistStore = defineStore('playlist', () => {
     collectOnlinePlaylist,
     uncollectOnlinePlaylist,
     isCollected,
+    // 本地音乐导入
+    importLocalSongs,
+    updateSongLyric,
     // 工具方法
     clearError
   }
