@@ -107,9 +107,19 @@ class AudioPlayer {
       let url = playUrlInfo.url
       const isLocal = playUrlInfo.isLocal
 
+      console.log('🔍 getSongPlayUrl 返回:', {
+        url: url?.substring(0, 100),
+        isLocal,
+        error: playUrlInfo.error
+      })
+
       // 如果没有本地文件，尝试获取在线 URL
       if (!isLocal) {
+        console.log('🌐 尝试获取在线 URL...')
         url = await getMusicUrl(songId)
+        console.log('🌐 getMusicUrl 返回:', url)
+        console.log('🌐 URL 类型:', typeof url)
+        console.log('🌐 URL 长度:', url?.length)
         
         // 再次检查是否已经切换到其他歌曲
         if (!this.isLoading || this.playerStore.currentSong?.id !== loadingId) {
@@ -140,6 +150,9 @@ class AudioPlayer {
       }
 
       console.log(`✅ 播放 URL 获取成功 (${isLocal ? '本地' : '在线'})，开始播放:`, song.name)
+      console.log('📌 最终设置的 URL:', url)
+      console.log('📌 URL 类型:', typeof url)
+      console.log('📌 URL 长度:', url?.length)
       
       // 设置新的音频源
       this.audio.src = url

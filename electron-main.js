@@ -33,6 +33,7 @@ let trayMenuState = {
   isPlaying: false,
   desktopLyricVisible: false
 } // 托盘菜单状态
+let pendingFilePath = null // 待处理的文件路径
 
 // 单实例锁定
 const gotTheLock = app.requestSingleInstanceLock()
@@ -52,6 +53,12 @@ if (!gotTheLock) {
         mainWindow.show()
       }
       mainWindow.focus()
+      
+      // 处理文件打开（从命令行参数中提取）
+      const filePath = extractFilePathFromArgs(commandLine)
+      if (filePath) {
+        handleOpenFile(filePath)
+      }
     }
   })
 }
@@ -82,6 +89,14 @@ function createWindow() {
   if (isDev) {
     mainWindow.webContents.openDevTools()
   }
+
+  // 窗口加载完成后，处理待打开的文件
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (pendingFilePath) {
+      handleOpenFile(pendingFilePath)
+      pendingFilePath = null
+    }
+  })
 
   // 创建菜单
   createMenu()
@@ -991,22 +1006,52 @@ function registerIpcHandlers() {
   // ==================== 读取本地音频文件 ====================
   ipcMain.handle('read-local-audio', async (event, filePath) => {
     try {
+      console.log('========== read-local-audio 开始 ==========')
+      console.log('收到文件路径:', filePath)
+      console.log('路径类型:', typeof filePath)
+      console.log('路径长度:', filePath.length)
+      
       validateParams({ filePath }, ['filePath'])
       
+      // 详细的路径检查
+      console.log('原始路径:', filePath)
+      console.log('规范化路径:', path.normalize(filePath))
+      console.log('解析后路径:', path.resolve(filePath))
+      
       // 检查文件是否存在
-      if (!fs.existsSync(filePath)) {
+      const exists = fs.existsSync(filePath)
+      console.log('文件存在?', exists)
+      
+      if (!exists) {
+        console.error('❌ 文件不存在:', filePath)
         return createResponse(false, null, { message: '文件不存在' })
       }
       
+      // 获取文件信息
+      try {
+        const stats = fs.statSync(filePath)
+        console.log('文件大小:', stats.size, '字节')
+        console.log('是文件?', stats.isFile())
+        console.log('可读?', (stats.mode & fs.constants.R_OK) !== 0)
+      } catch (statErr) {
+        console.error('获取文件信息失败:', statErr.message)
+      }
+      
       // 读取文件为 Buffer
+      console.log('开始读取文件...')
       const buffer = fs.readFileSync(filePath)
+      console.log('✅ 文件读取成功，大小:', buffer.length, '字节')
       
       // 返回 Buffer（会自动转换为 Uint8Array）
+      console.log('========== read-local-audio 完成 ==========')
       return createResponse(true, {
         buffer: buffer,
         size: buffer.length
       })
     } catch (error) {
+      console.error('❌ read-local-audio 错误:', error.message)
+      console.error('错误堆栈:', error.stack)
+      console.log('========== read-local-audio 失败 ==========')
       return createResponse(false, null, error)
     }
   })
@@ -1339,6 +1384,52 @@ function stopApiServer() {
   }
 }
 
+// ==================== 文件打开处理 ====================
+
+/**
+ * 从命令行参数中提取文件路径
+ * @param {Array} args - 命令行参数数组
+ * @returns {string|null} - 文件路径或 null
+ */
+function extractFilePathFromArgs(args) {
+  // Windows 下，文件路径通常在第二个参数（第一个是可执行文件路径）
+  // 开发模式下可能有更多参数，需要找到 .mp3 结尾的参数
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i]
+    if (arg && typeof arg === 'string' && arg.toLowerCase().endsWith('.mp3')) {
+      // 验证文件是否存在
+      if (fs.existsSync(arg)) {
+        return arg
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * 处理打开文件请求
+ * @param {string} filePath - 文件路径
+ */
+function handleOpenFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    console.error('文件不存在:', filePath)
+    return
+  }
+
+  // 验证是否是 MP3 文件
+  if (!filePath.toLowerCase().endsWith('.mp3')) {
+    console.error('不支持的文件格式:', filePath)
+    return
+  }
+
+  console.log('准备打开文件:', filePath)
+
+  // 发送到渲染进程
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('open-audio-file', filePath)
+  }
+}
+
 app.on('ready', async () => {
   // 注册自定义协议用于加载本地音频文件
   protocol.registerStreamProtocol('local-audio', (request, callback) => {
@@ -1374,6 +1465,14 @@ app.on('ready', async () => {
   await initializeManagers()
   registerIpcHandlers()
   createWindow()
+  
+  // 检查启动参数中是否有文件路径
+  const filePath = extractFilePathFromArgs(process.argv)
+  if (filePath) {
+    // 保存待处理的文件路径，等待窗口加载完成
+    pendingFilePath = filePath
+    console.log('检测到启动参数中的文件:', filePath)
+  }
 })
 
 app.on('window-all-closed', () => {

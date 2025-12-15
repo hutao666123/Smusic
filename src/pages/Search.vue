@@ -90,7 +90,7 @@
     </div>
 
     <div v-else class="search-tips">
-      <h3>🎵 搜索提示</h3>
+      <h3>搜索提示</h3>
       <p>输入歌曲名称或艺术家名称进行搜索</p>
     </div>
 

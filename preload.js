@@ -400,6 +400,17 @@ contextBridge.exposeInMainWorld('electron', {
     return () => ipcRenderer.removeListener('request-sync-to-desktop-lyric', listener)
   },
 
+  /**
+   * 监听打开音频文件事件（双击文件打开）
+   * @param {Function} callback - 回调函数，接收文件路径
+   * @returns {Function} - 取消监听的函数
+   */
+  onOpenAudioFile: (callback) => {
+    const listener = (event, filePath) => callback(filePath)
+    ipcRenderer.on('open-audio-file', listener)
+    return () => ipcRenderer.removeListener('open-audio-file', listener)
+  },
+
   // ==================== 本地音乐导入 ====================
   /**
    * 选择本地音频文件

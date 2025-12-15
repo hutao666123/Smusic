@@ -38,6 +38,7 @@ import Sidebar from './Sidebar.vue'
 import PlayerBar from './PlayerBar.vue'
 import { usePlaylistStore } from '../stores/playlist'
 import { setupNotification, showError, showSuccess } from '../utils/notification'
+import { useFileOpen } from '../composables/useFileOpen'
 
 const message = useMessage()
 const dialog = useDialog()
@@ -46,6 +47,9 @@ const playlistStore = usePlaylistStore()
 
 // 初始化通知 API
 setupNotification(message, dialog, notification)
+
+// 初始化文件打开功能
+useFileOpen({ dialog })
 
 // 全局错误处理
 window.addEventListener('unhandledrejection', (event) => {

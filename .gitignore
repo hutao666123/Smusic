@@ -29,3 +29,4 @@ services/api-enhanced/node_modules/lint-staged
 services/api-enhanced/node_modules/nodemon
 services/api-enhanced/node_modules/pkg
 release-site/
+installer-output/
