@@ -10,6 +10,8 @@ export const usePlayerStore = defineStore('player', () => {
   const volume = ref(0.3)
   const isLocalPlayback = ref(false) // 标记当前是否为本地播放
   const forceLocalMode = ref(false) // 标记是否强制使用本地播放模式（已下载歌单）
+  const currentPlaylistId = ref(null) // 当前播放列表的ID
+  const currentPlaylistType = ref(null) // 当前播放列表类型：'online' 或 'local'
 
   const currentSong = computed(() => playlist.value[currentIndex.value])
 
@@ -50,11 +52,7 @@ export const usePlayerStore = defineStore('player', () => {
 
     // 默认模式：直接使用在线播放，不输出日志
     if (!forceLocalMode.value) {
-      console.log('🌐 使用在线播放:', song.name)
-      console.log('🌐 歌曲对象中的 URL:', song.url)
-      console.log('🌐 URL 类型:', typeof song.url)
-      console.log('🌐 歌曲对象中的 localPath:', song.localPath)
-      console.log('🌐 完整歌曲对象:', JSON.stringify(song, null, 2))
+      
       return { url: null, isLocal: false, error: null }
     }
 
@@ -67,19 +65,10 @@ export const usePlayerStore = defineStore('player', () => {
       // 优先使用歌曲对象中的 localPath（如果有）
       if (song.localPath) {
         try {
-          console.log('🎵 读取本地文件 (来自对象):', song.name)
-          console.log('📂 文件路径:', song.localPath)
-          console.log('📂 路径类型:', typeof song.localPath)
-          console.log('📂 路径长度:', song.localPath.length)
+          
           
           const result = await window.electron.readLocalAudio(song.localPath)
-          
-          console.log('📥 readLocalAudio 返回结果:', {
-            success: result.success,
-            hasData: !!result.data,
-            dataSize: result.data?.size,
-            error: result.error
-          })
+
           
           if (result.success && result.data) {
             // 将 buffer 转换为 Blob URL
@@ -97,20 +86,16 @@ export const usePlayerStore = defineStore('player', () => {
       }
 
       // 如果歌曲对象没有 localPath，查询下载列表
-      console.log('getSongPlayUrl - 查询下载列表...')
       const localInfo = await checkLocalSong(song.id)
-      console.log('getSongPlayUrl - 查询结果:', localInfo)
       
       if (localInfo && localInfo.localPath) {
         try {
-          console.log('🎵 读取本地文件 (来自查询):', song.name, localInfo.localPath)
           const result = await window.electron.readLocalAudio(localInfo.localPath)
           
           if (result.success && result.data) {
             // 将 buffer 转换为 Blob URL
             const blob = new Blob([result.data.buffer], { type: 'audio/mpeg' })
             const blobUrl = URL.createObjectURL(blob)
-            console.log('✅ 本地文件转换为 Blob URL 成功')
             return { url: blobUrl, isLocal: true, error: null }
           } else {
             console.warn('读取本地文件失败:', result.error)
@@ -141,6 +126,9 @@ export const usePlayerStore = defineStore('player', () => {
   const next = () => {
     if (currentIndex.value < playlist.value.length - 1) {
       currentIndex.value++
+    } else {
+      // 如果是最后一首，跳回第一首
+      currentIndex.value = 0
     }
   }
 
@@ -158,6 +146,11 @@ export const usePlayerStore = defineStore('player', () => {
     playlist.value = []
     currentIndex.value = 0
     isPlaying.value = false
+  }
+
+  const setCurrentPlaylist = (playlistId, playlistType = 'online') => {
+    currentPlaylistId.value = playlistId
+    currentPlaylistType.value = playlistType
   }
 
   const setCurrentTime = (time) => {
@@ -181,6 +174,8 @@ export const usePlayerStore = defineStore('player', () => {
     volume,
     isLocalPlayback,
     forceLocalMode,
+    currentPlaylistId,
+    currentPlaylistType,
     currentSong,
     play,
     pause,
@@ -189,6 +184,7 @@ export const usePlayerStore = defineStore('player', () => {
     prev,
     addToPlaylist,
     clearPlaylist,
+    setCurrentPlaylist,
     setCurrentTime,
     setDuration,
     setVolume,
@@ -199,6 +195,6 @@ export const usePlayerStore = defineStore('player', () => {
   persist: {
     key: 'player-state',
     storage: localStorage,
-    paths: ['playlist', 'currentIndex', 'volume', 'isLocalPlayback', 'forceLocalMode', 'currentTime']
+    paths: ['playlist', 'currentIndex', 'volume', 'isLocalPlayback', 'forceLocalMode', 'currentTime', 'currentPlaylistId', 'currentPlaylistType']
   }
 })

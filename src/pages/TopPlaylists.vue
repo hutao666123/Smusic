@@ -1,4 +1,5 @@
 <template>
+  <!--热门详情页-->
   <div class="top-playlists">
     <div class="page-header">
       <button class="back-btn" @click="goBack">

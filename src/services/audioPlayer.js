@@ -32,12 +32,10 @@ class AudioPlayer {
         
         if (mode === 'loop') {
           // 循环播放：重新播放当前歌曲
-          console.log('🔁 循环播放当前歌曲')
           this.audio.currentTime = 0
           this.audio.play()
         } else {
           // 顺序或随机：切换到下一首
-          console.log('🎵 歌曲播放完成，切换到下一首')
           this.playerStore.next()
           this.playCurrentSong()
         }
@@ -75,13 +73,11 @@ class AudioPlayer {
     
     // 如果正在加载，取消之前的加载
     if (this.isLoading) {
-      console.log('⏭️ 取消之前的加载请求')
       this.isLoading = false
     }
 
     // 如果正在播放同一首歌，跳过
     if (this.currentSongId === songId && !this.audio.paused) {
-      console.log('▶️ 歌曲已在播放中')
       return
     }
 
@@ -93,37 +89,26 @@ class AudioPlayer {
     const loadingId = songId // 保存当前加载的歌曲ID
     
     try {
-      console.log('🎵 正在获取播放 URL:', song.name)
       
       // 首先尝试获取本地播放路径
       const playUrlInfo = await this.playerStore.getSongPlayUrl(song)
       
       // 检查是否已经切换到其他歌曲
       if (!this.isLoading || this.playerStore.currentSong?.id !== loadingId) {
-        console.log('⏭️ 歌曲已切换，取消播放')
         return
       }
 
       let url = playUrlInfo.url
       const isLocal = playUrlInfo.isLocal
 
-      console.log('🔍 getSongPlayUrl 返回:', {
-        url: url?.substring(0, 100),
-        isLocal,
-        error: playUrlInfo.error
-      })
 
       // 如果没有本地文件，尝试获取在线 URL
       if (!isLocal) {
-        console.log('🌐 尝试获取在线 URL...')
         url = await getMusicUrl(songId)
-        console.log('🌐 getMusicUrl 返回:', url)
-        console.log('🌐 URL 类型:', typeof url)
-        console.log('🌐 URL 长度:', url?.length)
+    
         
         // 再次检查是否已经切换到其他歌曲
         if (!this.isLoading || this.playerStore.currentSong?.id !== loadingId) {
-          console.log('⏭️ 歌曲已切换，取消播放')
           return
         }
       }
@@ -136,7 +121,6 @@ class AudioPlayer {
         
         // 自动跳到下一首
         if (this.playerStore.playlist.length > 1) {
-          console.log('⏭️ 自动跳到下一首')
           this.playerStore.next()
           setTimeout(() => this.playCurrentSong(), 1000)
         }
@@ -145,15 +129,9 @@ class AudioPlayer {
 
       // 再次检查是否已经切换到其他歌曲
       if (!this.isLoading || this.playerStore.currentSong?.id !== loadingId) {
-        console.log('⏭️ 歌曲已切换，取消播放')
         return
       }
 
-      console.log(`✅ 播放 URL 获取成功 (${isLocal ? '本地' : '在线'})，开始播放:`, song.name)
-      console.log('📌 最终设置的 URL:', url)
-      console.log('📌 URL 类型:', typeof url)
-      console.log('📌 URL 长度:', url?.length)
-      
       // 设置新的音频源
       this.audio.src = url
       this.currentSongId = songId
@@ -166,7 +144,6 @@ class AudioPlayer {
       } catch (playError) {
         // 处理 play() 被中断的情况
         if (playError.name === 'AbortError') {
-          console.log('⏭️ 播放被新请求中断')
         } else {
           throw playError
         }
@@ -187,7 +164,6 @@ class AudioPlayer {
         
         // 如果是本地播放失败，尝试跳到下一首
         if (this.playerStore.isLocalPlayback && this.playerStore.playlist.length > 1) {
-          console.log('⏭️ 本地播放失败，自动跳到下一首')
           this.playerStore.next()
           setTimeout(() => this.playCurrentSong(), 1000)
         }

@@ -1,4 +1,5 @@
 <template>
+  <!--搜索页面-->
   <div class="search">
     <div class="search-header">
       <div class="search-box">

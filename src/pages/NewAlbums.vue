@@ -1,4 +1,5 @@
 <template>
+  <!--新碟详情页-->
   <div class="new-albums">
     <div class="page-header">
       <button class="back-btn" @click="goBack">

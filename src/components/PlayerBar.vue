@@ -681,6 +681,14 @@ const togglePlaylist = async () => {
     if (playlistContent.value) {
       playlistContent.value.focus()
     }
+    // 滚动到当前播放的歌曲
+    if (currentIndex.value >= 0) {
+      await nextTick()
+      const activeItem = playlistContent.value?.querySelector('.playlist-item.active')
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      }
+    }
   }
 }
 
@@ -941,23 +949,32 @@ const changePlayMode = () => {
   // 如果切换到随机模式，打乱播放列表
   if (newMode === 'random' && playlist.value.length > 0) {
     const currentSongData = currentSong.value
-    const newPlaylist = [...playlist.value]
     
-    // Fisher-Yates 洗牌算法
-    for (let i = newPlaylist.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newPlaylist[i], newPlaylist[j]] = [newPlaylist[j], newPlaylist[i]]
-    }
-    
-    // 更新播放列表
-    playerStore.playlist = newPlaylist
-    
-    // 找到当前歌曲在新列表中的位置
     if (currentSongData) {
-      const newIndex = newPlaylist.findIndex(song => song.id === currentSongData.id)
-      if (newIndex !== -1) {
-        playerStore.currentIndex = newIndex
+      // 将当前歌曲从列表中移除
+      const otherSongs = playlist.value.filter(song => song.id !== currentSongData.id)
+      
+      // 对其他歌曲使用 Fisher-Yates 洗牌算法
+      for (let i = otherSongs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [otherSongs[i], otherSongs[j]] = [otherSongs[j], otherSongs[i]]
       }
+      
+      // 将当前歌曲放在第一位，其他歌曲随机排列在后面
+      const newPlaylist = [currentSongData, ...otherSongs]
+      
+      // 更新播放列表
+      playerStore.playlist = newPlaylist
+      // 当前歌曲索引设为 0
+      playerStore.currentIndex = 0
+    } else {
+      // 如果没有当前歌曲，正常打乱
+      const newPlaylist = [...playlist.value]
+      for (let i = newPlaylist.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newPlaylist[i], newPlaylist[j]] = [newPlaylist[j], newPlaylist[i]]
+      }
+      playerStore.playlist = newPlaylist
     }
   }
   

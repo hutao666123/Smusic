@@ -1,4 +1,5 @@
 <template>
+  <!--标题栏-->
   <div class="title-bar">
     <!-- 左侧拖拽区域 -->
     <div class="title-bar-left">
@@ -7,7 +8,10 @@
         <svg t="1765372539361" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8524" width="20" height="20"><path d="M727.578947 215.578947c6.965895 0 13.312 2.640842 18.095158 6.979369l-3.516631-2.465684C847.333053 293.052632 916.210526 414.706526 916.210526 552.421053c0 223.245474-180.965053 404.210526-404.210526 404.210526C288.754526 956.631579 107.789474 775.666526 107.789474 552.421053c0-136.178526 67.341474-256.633263 170.536421-329.862737a26.947368 26.947368 0 0 1 35.058526 40.906105l0.161684 0.202105C221.830737 326.858105 161.684211 432.626526 161.684211 552.421053c0 193.482105 156.833684 350.315789 350.315789 350.315789s350.315789-156.833684 350.315789-350.315789c0-119.296-59.634526-224.673684-150.716631-287.932632l0.121263-0.175158A26.947368 26.947368 0 0 1 727.578947 215.578947z" fill="#555555" p-id="8525"></path><path d="M629.450105 70.629053s3.045053 51.442526-23.215158 85.854315c-22.689684 29.736421-63.568842 49.178947-80.141473 56.185264l162.627368 281.640421C704.889263 519.504842 714.105263 548.513684 714.105263 579.368421c0 96.741053-90.489263 175.157895-202.105263 175.157895-111.616 0-202.105263-78.416842-202.105263-175.157895s90.489263-175.157895 202.105263-175.157895c24.010105 0 47.036632 3.637895 68.405895 10.280421L448.673684 186.354526a26.947368 26.947368 0 0 1 23.552-40.421052c17.785263-4.446316 57.411368-15.225263 91.351579-31.029895 37.187368-17.286737 65.872842-44.274526 65.872842-44.274526zM512 458.105263c-83.429053 0-148.210526 56.144842-148.210526 121.263158s64.781474 121.263158 148.210526 121.263158 148.210526-56.144842 148.210526-121.263158c0-18.607158-5.295158-36.500211-14.794105-52.547368a20.547368 20.547368 0 0 1-1.374316-2.088421l-0.862316-1.522527C618.617263 485.025684 569.775158 458.105263 512 458.105263z" fill="#555555" p-id="8526"></path><path d="M565.113263 589.972211l-72.178526 53.948631a13.473684 13.473684 0 0 1-21.544421-10.778947v-107.910737a13.473684 13.473684 0 0 1 21.544421-10.778947l72.178526 53.935157a13.473684 13.473684 0 0 1 0 21.584843z" p-id="8527"></path></svg>
         <span class="logo-text">Smusic</span>
       </div>
+    </div>
 
+    <!-- 右侧按钮组 -->
+    <div class="title-bar-right">
       <!-- 导航按钮 -->
       <div class="nav-buttons">
         <button class="nav-button" @click="goBack" title="后退">
@@ -27,22 +31,44 @@
         </button>
       </div>
 
-      <!-- 搜索按钮 -->
-      <button class="search-button" @click="goToSearch" title="搜索">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-        </svg>
-      </button>
+      <!-- 功能按钮 -->
+      <div class="action-buttons">
+        <!-- 抽屉按钮 -->
+        <button class="action-button" @click="showDrawer = true" title="抽屉">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
+          </svg>
+        </button>
 
-      <!-- 设置按钮 -->
-      <button class="settings-button" @click="goToSettings" title="设置">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
-        </svg>
-      </button>
+        <!-- 定位按钮 -->
+        <button 
+          class="action-button" 
+          @click="locateCurrentSong" 
+          :disabled="!canLocate"
+          :title="canLocate ? '定位到当前歌曲' : '无法定位'"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+          </svg>
+        </button>
+
+        <!-- 搜索按钮 -->
+        <button class="action-button" @click="goToSearch" title="搜索">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+        </button>
+
+        <!-- 设置按钮 -->
+        <button class="action-button" @click="goToSettings" title="设置">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <!-- 右侧窗口控制按钮 -->
+    <!-- 窗口控制按钮 -->
     <div class="title-bar-controls">
       <button class="title-bar-button" @click="minimize" title="最小化">
         <svg width="12" height="12" viewBox="0 0 12 12">
@@ -66,15 +92,27 @@
         </svg>
       </button>
     </div>
+
+    <!-- 抽屉弹窗 -->
+    <DrawerDialog v-model:show="showDrawer" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePlayerStore } from '../stores/player'
+import DrawerDialog from './DrawerDialog.vue'
 
 const router = useRouter()
+const playerStore = usePlayerStore()
 const isMaximized = ref(false)
+const showDrawer = ref(false)
+
+// 检查是否可以定位
+const canLocate = computed(() => {
+  return playerStore.currentSong && playerStore.currentPlaylistId
+})
 
 const goBack = () => {
   router.back()
@@ -94,6 +132,41 @@ const goToSearch = () => {
 
 const goToSettings = () => {
   router.push('/settings')
+}
+
+const locateCurrentSong = async () => {
+  if (!canLocate.value) return
+  
+  const playlistId = playerStore.currentPlaylistId
+  const playlistType = playerStore.currentPlaylistType
+  const songId = playerStore.currentSong.id
+  
+  // 根据歌单类型构建目标路由
+  const targetRoute = playlistType === 'local' 
+    ? {
+        name: 'LocalPlaylist',
+        params: { id: playlistId },
+        query: { highlight: songId }
+      }
+    : {
+        name: 'Playlist',
+        params: { id: playlistId },
+        query: { highlight: songId }
+      }
+  
+  // 检查是否在同一个路由
+  const currentRoute = router.currentRoute.value
+  const isSameRoute = currentRoute.name === targetRoute.name && 
+                      currentRoute.params.id === targetRoute.params.id
+  
+  if (isSameRoute) {
+    // 如果在同一个路由，先跳转到搜索页面再跳回来
+    await router.push('/search')
+    await router.push(targetRoute)
+  } else {
+    // 不同路由直接跳转
+    router.push(targetRoute)
+  }
 }
 
 const minimize = () => {
@@ -148,9 +221,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 20px;
   -webkit-app-region: drag;
-  position: relative;
 }
 
 /* Logo */
@@ -161,8 +232,6 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   -webkit-app-region: no-drag;
-  padding-right: 20px;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .logo svg {
@@ -176,19 +245,26 @@ onMounted(() => {
   background-clip: text;
 }
 
-/* 导航按钮 */
+/* 右侧按钮区域 */
+.title-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  -webkit-app-region: no-drag;
+}
+
+/* 导航按钮组 */
 .nav-buttons {
   display: flex;
-  gap: 6px;
-  -webkit-app-region: no-drag;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  gap: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
 }
 
 .nav-button {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.7);
@@ -196,7 +272,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.2s;
 }
 
@@ -209,10 +285,18 @@ onMounted(() => {
   transform: scale(0.95);
 }
 
-/* 搜索按钮 */
-.search-button {
-  width: 40px;
-  height: 40px;
+/* 功能按钮组 */
+.action-buttons {
+  display: flex;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.action-button {
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.7);
@@ -220,45 +304,22 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.2s;
-  -webkit-app-region: no-drag;
-  margin-left: auto;
-  margin-right: 8px;
 }
 
-.search-button:hover {
+.action-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.search-button:active {
+.action-button:active:not(:disabled) {
   transform: scale(0.95);
 }
 
-/* 设置按钮 */
-.settings-button {
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s;
-  -webkit-app-region: no-drag;
-}
-
-.settings-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.settings-button:active {
-  transform: scale(0.95);
+.action-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* 窗口控制按钮 */

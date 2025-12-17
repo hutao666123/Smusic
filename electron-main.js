@@ -1006,52 +1006,24 @@ function registerIpcHandlers() {
   // ==================== 读取本地音频文件 ====================
   ipcMain.handle('read-local-audio', async (event, filePath) => {
     try {
-      console.log('========== read-local-audio 开始 ==========')
-      console.log('收到文件路径:', filePath)
-      console.log('路径类型:', typeof filePath)
-      console.log('路径长度:', filePath.length)
       
       validateParams({ filePath }, ['filePath'])
       
-      // 详细的路径检查
-      console.log('原始路径:', filePath)
-      console.log('规范化路径:', path.normalize(filePath))
-      console.log('解析后路径:', path.resolve(filePath))
-      
       // 检查文件是否存在
-      const exists = fs.existsSync(filePath)
-      console.log('文件存在?', exists)
-      
+      const exists = fs.existsSync(filePath)      
       if (!exists) {
-        console.error('❌ 文件不存在:', filePath)
         return createResponse(false, null, { message: '文件不存在' })
       }
       
-      // 获取文件信息
-      try {
-        const stats = fs.statSync(filePath)
-        console.log('文件大小:', stats.size, '字节')
-        console.log('是文件?', stats.isFile())
-        console.log('可读?', (stats.mode & fs.constants.R_OK) !== 0)
-      } catch (statErr) {
-        console.error('获取文件信息失败:', statErr.message)
-      }
-      
       // 读取文件为 Buffer
-      console.log('开始读取文件...')
       const buffer = fs.readFileSync(filePath)
-      console.log('✅ 文件读取成功，大小:', buffer.length, '字节')
       
       // 返回 Buffer（会自动转换为 Uint8Array）
-      console.log('========== read-local-audio 完成 ==========')
       return createResponse(true, {
         buffer: buffer,
         size: buffer.length
       })
     } catch (error) {
-      console.error('❌ read-local-audio 错误:', error.message)
-      console.error('错误堆栈:', error.stack)
-      console.log('========== read-local-audio 失败 ==========')
       return createResponse(false, null, error)
     }
   })

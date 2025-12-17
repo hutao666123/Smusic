@@ -1,4 +1,5 @@
 <template>
+  <!--收藏歌单页面-->
   <div class="collected-playlists">
 
     <div v-if="loading" class="loading-state">

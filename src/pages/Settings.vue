@@ -1,7 +1,6 @@
 <template>
   <div class="settings-page">
     <div class="settings-container">
-      <h1 class="settings-title">设置</h1>
 
       <!-- 主题设置 -->
       <div class="settings-section">
@@ -649,10 +648,7 @@ const applyCustomText = () => {
 // 处理桌面歌词颜色选择器变化
 const handleLyricPickerChange = (event) => {
   const color = event.target.value
-  console.log('设置桌面歌词颜色:', color)
   themeStore.setDesktopLyricColor(color)
-  console.log('保存后 localStorage:', localStorage.getItem('desktop-lyric-color'))
-  console.log('保存后 store:', themeStore.desktopLyricColor)
   customLyricInput.value = color
   lyricInputError.value = ''
   // 关闭桌面歌词窗口
@@ -680,10 +676,7 @@ const applyCustomLyric = () => {
 // 处理桌面歌词大小变化
 const handleLyricSizeChange = (event) => {
   const size = parseFloat(event.target.value)
-  console.log('设置桌面歌词大小:', size)
   themeStore.setDesktopLyricSize(size)
-  console.log('保存后 localStorage:', localStorage.getItem('desktop-lyric-size'))
-  console.log('保存后 store:', themeStore.desktopLyricSize)
   // 关闭桌面歌词窗口
   window.electron.closeDesktopLyric()
 }

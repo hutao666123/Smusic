@@ -88,7 +88,7 @@
             :key="song.id"
             class="song-item"
             :class="{ 'is-playing': isCurrentSong(song.id) }"
-            @click="playSong(song, index)"
+            @click="playSong(song, index, $event)"
           >
             <span class="song-index">
               <span v-if="isCurrentSong(song.id)" class="playing-indicator">♪</span>
@@ -236,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlaylistStore } from '../stores/playlist'
 import { useDownloadStore } from '../stores/download'
@@ -360,6 +360,14 @@ const loadMoreSongs = () => {
 onMounted(async () => {
   await loadPlaylist()
   
+  // 等待 loading 状态更新后再执行滚动
+  await nextTick()
+  
+  // 如果有高亮参数，执行滚动定位
+  if (route.query.highlight) {
+    await scrollToSong(route.query.highlight)
+  }
+  
   // 查找滚动容器（.app-main）
   const scrollContainer = document.querySelector('.app-main')
   if (scrollContainer) {
@@ -384,7 +392,80 @@ watch(() => route.params.id, async () => {
   // 重置分页
   currentPage.value = 1
   await loadPlaylist()
+  
+  // 等待 loading 状态更新后再执行滚动
+  await nextTick()
+  
+  // 如果有高亮参数，执行滚动定位
+  if (route.query.highlight) {
+    await scrollToSong(route.query.highlight)
+  }
 })
+
+// 滚动到指定歌曲并高亮
+const scrollToSong = async (songId) => {
+  
+  const songIndex = songs.value.findIndex(s => s.id == songId)
+  
+  if (songIndex === -1) {
+    return
+  }
+  
+  // 如果歌曲还未加载，先加载到该位置
+  if (songIndex >= displayedSongs.value.length) {
+    const neededPage = Math.ceil((songIndex + 1) / PAGE_SIZE)
+    while (currentPage.value < neededPage && hasMoreSongs.value) {
+      currentPage.value++
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+  }
+  
+  // 使用 nextTick 确保 DOM 更新完成
+  await nextTick()
+  // 再等待一下确保渲染完成
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
+  // 查找歌曲元素
+  const songElements = document.querySelectorAll('.song-item')
+  const targetElement = songElements[songIndex]
+  
+  if (targetElement) {
+    
+    // 添加高亮类
+    targetElement.classList.add('highlight-song')
+    
+    // 找到滚动容器
+    const scrollContainer = document.querySelector('.app-main')
+    if (scrollContainer) {
+      // 计算目标元素相对于滚动容器的位置
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const targetRect = targetElement.getBoundingClientRect()
+      
+      // 计算需要滚动的距离（让元素居中）
+      const scrollTop = scrollContainer.scrollTop
+      const offset = targetRect.top - containerRect.top - (containerRect.height / 2) + (targetRect.height / 2)
+      
+      // 平滑滚动
+      scrollContainer.scrollTo({
+        top: scrollTop + offset,
+        behavior: 'smooth'
+      })
+    } else {
+      // 如果找不到滚动容器，使用默认方式
+      targetElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }
+    
+    // 3秒后移除高亮
+    setTimeout(() => {
+      targetElement.classList.remove('highlight-song')
+    }, 3000)
+  } else {
+    console.log('未找到目标元素')
+  }
+}
 
 // 加载歌单
 const loadPlaylist = async () => {
@@ -416,6 +497,8 @@ const playAll = () => {
 
   // 设置播放模式：如果是已下载歌单或本地音乐，强制本地播放
   playerStore.forceLocalMode = isDownloadsPlaylist.value || isLocalImportedPlaylist.value
+  // 设置当前播放列表来源
+  playerStore.setCurrentPlaylist(route.params.id, 'local')
 
   playerStore.clearPlaylist()
   songs.value.forEach(song => {
@@ -433,13 +516,15 @@ const playAll = () => {
 }
 
 // 播放单曲
-const playSong = (song, displayIndex) => {
+const playSong = (song, displayIndex, event) => {
 
   // 找到歌曲在完整列表中的真实索引
   const realIndex = songs.value.findIndex(s => s.id === song.id)
   
   // 设置播放模式：如果是已下载歌单或本地音乐，强制本地播放
   playerStore.forceLocalMode = isDownloadsPlaylist.value || isLocalImportedPlaylist.value
+  // 设置当前播放列表来源
+  playerStore.setCurrentPlaylist(route.params.id, 'local')
   
   playerStore.clearPlaylist()
   
@@ -454,11 +539,15 @@ const playSong = (song, displayIndex) => {
       localPath: s.localPath,
       cover: s.album?.picUrl || ''
     }
-    console.log('添加到播放器的歌曲:', songToAdd)
     playerStore.addToPlaylist(songToAdd)
   }
   
   playerStore.play()
+  
+  // 创建飞行音符动画
+  if (event) {
+    createFlyingNote(event)
+  }
 }
 
 // 下载单曲
@@ -776,6 +865,46 @@ const setLyric = async (song) => {
     console.error('设置歌词失败:', error)
     showToast('设置歌词失败', 'error')
   }
+}
+
+// 创建飞行音符动画
+const createFlyingNote = (event) => {
+  const target = event.currentTarget
+  const rect = target.getBoundingClientRect()
+  
+  // 创建音符元素
+  const note = document.createElement('div')
+  note.className = 'flying-note'
+  note.innerHTML = '♪'
+  
+  // 设置起始位置
+  const startX = rect.left + rect.width / 2
+  const startY = rect.top + rect.height / 2
+  note.style.left = startX + 'px'
+  note.style.top = startY + 'px'
+  
+  document.body.appendChild(note)
+  
+  // 获取播放器位置（底部中间）
+  const targetX = window.innerWidth / 2
+  const targetY = window.innerHeight - 60
+  
+  // 计算移动距离
+  const deltaX = targetX - startX
+  const deltaY = targetY - startY
+  
+  // 使用requestAnimationFrame确保动画触发
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      note.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.3) rotate(360deg)`
+      note.style.opacity = '0'
+    })
+  })
+  
+  // 动画结束后移除元素
+  setTimeout(() => {
+    note.remove()
+  }, 1000)
 }
 </script>
 
@@ -1457,6 +1586,23 @@ const setLyric = async (song) => {
 .toast.warning {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
+}
+
+/* 高亮动画 */
+.highlight-song {
+  animation: highlightPulse 1.5s ease-in-out 2;
+  background: rgba(102, 126, 234, 0.4) !important;
+}
+
+@keyframes highlightPulse {
+  0%, 100% {
+    background: rgba(102, 126, 234, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    background: rgba(102, 126, 234, 0.6);
+    transform: scale(1.01);
+  }
 }
 
 /* 加载更多容器 */

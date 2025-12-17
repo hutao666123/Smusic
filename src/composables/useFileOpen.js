@@ -29,9 +29,7 @@ export function useFileOpen({ dialog }) {
    * @param {string} filePath - 文件路径
    */
   const handleOpenAudioFile = async (filePath) => {
-    try {
-      console.log('🎵 收到打开文件请求:', filePath)
-      
+    try {      
       if (!dialog) {
         console.error('dialog 未注入')
         return
@@ -45,7 +43,6 @@ export function useFileOpen({ dialog }) {
       }
 
       const metadata = metadataResult.data
-      console.log('📋 文件元数据:', metadata)
 
       // 2. 生成歌曲对象
       const song = {
@@ -59,8 +56,6 @@ export function useFileOpen({ dialog }) {
         isLocalFile: true, // 标记为本地文件
         addTime: Date.now()
       }
-
-      console.log('🎼 生成歌曲对象:', song)
 
       // 3. 询问用户是否导入到本地音乐
       const shouldImport = await new Promise((resolve) => {
@@ -86,7 +81,6 @@ export function useFileOpen({ dialog }) {
         try {
           const importResult = await window.electron.addLocalSong(song)
           if (importResult.success) {
-            console.log('✅ 已导入到本地音乐')
             showSuccess('已导入到本地音乐并开始播放')
           } else {
             console.warn('导入失败，但继续播放:', importResult.error)
@@ -101,25 +95,16 @@ export function useFileOpen({ dialog }) {
       }
 
       // 5. 添加到播放列表
-      console.log('📝 添加到播放列表，歌曲信息:', {
-        id: song.id,
-        name: song.name,
-        localPath: song.localPath,
-        isLocalFile: song.isLocalFile
-      })
       playerStore.playlist = [song]
       playerStore.currentIndex = 0
       playerStore.forceLocalMode = true // 强制使用本地模式
 
       // 6. 自动播放
       setTimeout(() => {
-        console.log('▶️ 开始播放')
         playerStore.play()
       }, 100)
 
-      console.log('✅ 文件打开成功')
     } catch (error) {
-      console.error('❌ 打开文件失败:', error)
       showError(`打开文件失败: ${error.message}`)
     }
   }
@@ -130,14 +115,12 @@ export function useFileOpen({ dialog }) {
   onMounted(() => {
     if (window.electron && window.electron.onOpenAudioFile) {
       unsubscribe = window.electron.onOpenAudioFile(handleOpenAudioFile)
-      console.log('📡 已注册文件打开监听器')
     }
   })
 
   onUnmounted(() => {
     if (unsubscribe) {
       unsubscribe()
-      console.log('📡 已取消文件打开监听器')
     }
   })
 

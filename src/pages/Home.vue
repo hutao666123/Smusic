@@ -1,4 +1,5 @@
 <template>
+  <!--首页-->
   <div class="home">
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>

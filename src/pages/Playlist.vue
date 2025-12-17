@@ -52,10 +52,14 @@
             v-for="(song, index) in displayedSongs"
             :key="song.id"
             class="song-item"
-            @click="playSong(song, index)"
+            :class="{ 'is-playing': isCurrentSong(song.id) }"
+            @click="playSong(song, index, $event)"
             @contextmenu.prevent="showContextMenu($event, song)"
           >
-            <span class="song-index">{{ index + 1 }}</span>
+            <span class="song-index">
+              <span v-if="isCurrentSong(song.id)" class="playing-indicator">♪</span>
+              <span v-else>{{ index + 1 }}</span>
+            </span>
             <div class="song-cover">
               <img v-if="song.al?.picUrl" :src="song.al.picUrl" :alt="song.name" />
               <div v-else class="no-cover">🎵</div>
@@ -169,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onBeforeUnmount, onUnmounted, watch } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { usePlaylistStore } from '../stores/playlist'
@@ -300,12 +304,19 @@ onMounted(async () => {
     loading.value = false
   }
   
+  // 等待 loading 状态更新后再执行滚动
+  await nextTick()
+  
+  // 如果有高亮参数，执行滚动定位
+  if (route.query.highlight) {
+    await scrollToSong(route.query.highlight)
+  }
+  
   // 查找滚动容器（.app-main）
   const scrollContainer = document.querySelector('.app-main')
   if (scrollContainer) {
     scrollContainer.addEventListener('scroll', handleScroll)
   } else {
-    console.log('未找到滚动容器，使用 window')
     window.addEventListener('scroll', handleScroll)
   }
 })
@@ -335,11 +346,102 @@ watch(() => route.params.id, async () => {
   } finally {
     loading.value = false
   }
+  
+  // 等待 loading 状态更新后再执行滚动
+  await nextTick()
+  
+  // 如果有高亮参数，执行滚动定位
+  if (route.query.highlight) {
+    await scrollToSong(route.query.highlight)
+  }
 })
+
+// 滚动到指定歌曲并高亮
+const scrollToSong = async (songId) => {
+  
+  let songIndex = songs.value.findIndex(s => s.id == songId)
+  
+  // 如果在当前已加载的歌曲中找不到，继续加载更多页
+  if (songIndex === -1 && songs.value.length < totalCount.value) {
+    
+    // 计算需要加载的总页数
+    const totalPages = Math.ceil(totalCount.value / PAGE_SIZE)
+    
+    // 逐页加载直到找到歌曲或加载完所有歌曲
+    for (let page = currentPage.value + 1; page <= totalPages; page++) {
+      await loadSongs(page)
+      currentPage.value = page
+      
+      // 每加载一页就检查一次
+      songIndex = songs.value.findIndex(s => s.id == songId)
+      if (songIndex !== -1) {
+        break
+      }
+    }
+  }
+  
+  if (songIndex === -1) {
+    showToast('未找到该歌曲', 'warning')
+    return
+  }
+  
+  // 如果歌曲还未显示（分页显示），更新显示页数
+  if (songIndex >= displayedSongs.value.length) {
+    const neededPage = Math.ceil((songIndex + 1) / PAGE_SIZE)
+    currentPage.value = Math.max(currentPage.value, neededPage)
+  }
+  
+  // 使用 nextTick 确保 DOM 更新完成
+  await nextTick()
+  // 再等待一下确保渲染完成
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
+  // 查找歌曲元素
+  const songElements = document.querySelectorAll('.song-item')
+  const targetElement = songElements[songIndex]
+  
+  if (targetElement) {
+    
+    // 添加高亮类
+    targetElement.classList.add('highlight-song')
+    
+    // 找到滚动容器
+    const scrollContainer = document.querySelector('.app-main')
+    if (scrollContainer) {
+      // 计算目标元素相对于滚动容器的位置
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const targetRect = targetElement.getBoundingClientRect()
+      
+      // 计算需要滚动的距离（让元素居中）
+      const scrollTop = scrollContainer.scrollTop
+      const offset = targetRect.top - containerRect.top - (containerRect.height / 2) + (targetRect.height / 2)
+      
+      // 平滑滚动
+      scrollContainer.scrollTo({
+        top: scrollTop + offset,
+        behavior: 'smooth'
+      })
+    } else {
+      // 如果找不到滚动容器，使用默认方式
+      targetElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }
+    
+    // 3秒后移除高亮
+    setTimeout(() => {
+      targetElement.classList.remove('highlight-song')
+    }, 3000)
+  } else {
+  }
+}
 
 const playAll = async () => {
   // 非本地歌单，使用在线播放
   playerStore.forceLocalMode = false
+  // 设置当前播放列表来源
+  playerStore.setCurrentPlaylist(route.params.id, 'online')
   // 先播放已加载的歌曲
   playerStore.clearPlaylist()
   songs.value.forEach(s => {
@@ -385,9 +487,11 @@ const playAll = async () => {
   }
 }
 
-const playSong = (song, displayIndex) => {
+const playSong = (song, displayIndex, event) => {
   // 非本地歌单，使用在线播放
   playerStore.forceLocalMode = false
+  // 设置当前播放列表来源
+  playerStore.setCurrentPlaylist(route.params.id, 'online')
   // 找到歌曲在完整列表中的真实索引
   const realIndex = songs.value.findIndex(s => s.id === song.id)
   
@@ -404,6 +508,11 @@ const playSong = (song, displayIndex) => {
     })
   }
   playerStore.play()
+  
+  // 创建飞行音符动画
+  if (event) {
+    createFlyingNote(event)
+  }
 }
 
 const addToPlaylist = (song, event) => {
@@ -470,6 +579,11 @@ const formatCount = (count) => {
     return (count / 10000).toFixed(1) + '万'
   }
   return count
+}
+
+// 检查是否是当前播放的歌曲
+const isCurrentSong = (songId) => {
+  return playerStore.currentSong?.id === songId && playerStore.isPlaying
 }
 
 // 检查是否喜欢
@@ -978,6 +1092,10 @@ onBeforeUnmount(() => {
   transform: translateX(4px);
 }
 
+.song-item.is-playing {
+  background: rgba(102, 126, 234, 0.3);
+}
+
 .song-index {
   flex: 0 0 35px;
   text-align: center;
@@ -986,8 +1104,23 @@ onBeforeUnmount(() => {
   font-size: 15px;
 }
 
-.song-item:hover .song-index {
+.song-item:hover .song-index,
+.song-item.is-playing .song-index {
   color: var(--text-primary);
+}
+
+.playing-indicator {
+  color: #667eea;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .song-cover {
@@ -1290,6 +1423,23 @@ onBeforeUnmount(() => {
 .toast.warning {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
+}
+
+/* 高亮动画 */
+.highlight-song {
+  animation: highlightPulse 1.5s ease-in-out 2;
+  background: rgba(102, 126, 234, 0.4) !important;
+}
+
+@keyframes highlightPulse {
+  0%, 100% {
+    background: rgba(102, 126, 234, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    background: rgba(102, 126, 234, 0.6);
+    transform: scale(1.01);
+  }
 }
 
 /* 右键菜单 */
