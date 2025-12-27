@@ -165,26 +165,21 @@ const handleConfirm = async () => {
     const song = playerStore.currentSong
     const playlistId = playerStore.currentPlaylistId
     
-    // 获取歌单名称
+    // 获取歌单名称 - 使用 currentPlaylistId 对应的实际歌单
     let playlistName = '未知歌单'
     
     // 先尝试从本地歌单获取
-    const playlist = playlistStore.getPlaylistById(playlistId)
-    if (playlist) {
-      playlistName = playlist.name
+    const localPlaylist = playlistStore.getPlaylistById(playlistId)
+    if (localPlaylist) {
+      playlistName = localPlaylist.name
     } else {
       // 如果是在线歌单，尝试从收藏列表获取
       const collectedPlaylist = playlistStore.collectedPlaylists.find(p => p.id === playlistId)
       if (collectedPlaylist) {
         playlistName = collectedPlaylist.name
       } else {
-        // 如果都找不到，尝试从页面标题获取（在线歌单页面）
-        const pageTitle = document.querySelector('.playlist-info h1')
-        if (pageTitle && pageTitle.textContent) {
-          playlistName = pageTitle.textContent.trim()
-        } else {
-          playlistName = `歌单 ${playlistId}`
-        }
+        // 都找不到时，使用默认名称
+        playlistName = `歌单 ${playlistId}`
       }
     }
 

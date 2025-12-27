@@ -312,6 +312,39 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   /**
+   * 监听下载完成事件
+   * @param {Function} callback - 回调函数
+   * @returns {Function} - 取消监听的函数
+   */
+  onDownloadComplete: (callback) => {
+    const listener = (event, data) => callback(data)
+    ipcRenderer.on('download-complete', listener)
+    return () => ipcRenderer.removeListener('download-complete', listener)
+  },
+
+  /**
+   * 监听下载错误事件
+   * @param {Function} callback - 回调函数
+   * @returns {Function} - 取消监听的函数
+   */
+  onDownloadError: (callback) => {
+    const listener = (event, data) => callback(data)
+    ipcRenderer.on('download-error', listener)
+    return () => ipcRenderer.removeListener('download-error', listener)
+  },
+
+  /**
+   * 监听所有下载完成事件
+   * @param {Function} callback - 回调函数
+   * @returns {Function} - 取消监听的函数
+   */
+  onDownloadAllComplete: (callback) => {
+    const listener = (event, data) => callback(data)
+    ipcRenderer.on('download-all-complete', listener)
+    return () => ipcRenderer.removeListener('download-all-complete', listener)
+  },
+
+  /**
    * 取消下载进度监听
    * @param {Function} callback - 回调函数
    */
@@ -345,6 +378,25 @@ contextBridge.exposeInMainWorld('electron', {
    * @returns {Promise<Object>} - 操作结果
    */
   openDownloadsFolder: () => ipcRenderer.invoke('open-downloads-folder'),
+
+  /**
+   * 获取当前下载目录路径
+   * @returns {Promise<Object>} - { path }
+   */
+  getDownloadPath: () => ipcRenderer.invoke('get-download-path'),
+
+  /**
+   * 选择下载目录
+   * @returns {Promise<Object>} - { canceled, path }
+   */
+  selectDownloadFolder: () => ipcRenderer.invoke('select-download-folder'),
+
+  /**
+   * 设置下载目录
+   * @param {string} newPath - 新的下载目录路径
+   * @returns {Promise<Object>} - 操作结果
+   */
+  setDownloadPath: (newPath) => ipcRenderer.invoke('set-download-path', newPath),
 
   // ==================== 全局快捷键 ====================
   /**

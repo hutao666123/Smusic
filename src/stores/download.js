@@ -281,90 +281,117 @@ export const useDownloadStore = defineStore('download', () => {
       // 添加所有歌曲到队列
       downloadQueue.value = [...songsWithUrl]
 
-      // 为每首歌创建任务
-      const tasks = songsWithUrl.map(song => {
-        const taskId = `download-${song.id}-${Date.now()}`
-        return {
-          id: taskId,
-          songId: song.id,
-          songName: song.name || '未知歌曲',
-          artists: song.artists || [],
-          album: song.album || {},
-          status: 'pending',
-          progress: 0,
-          downloadedSize: 0,
-          totalSize: 0,
-          speed: 0,
-          error: null,
-          startTime: Date.now(),
-          endTime: null
-        }
-      })
-
-      // 添加到任务列表
-      tasks.forEach(task => {
-        downloadTasks.value.set(task.id, task)
-      })
-      downloadTasks.value = new Map(downloadTasks.value)
-
-      // 调用主进程批量下载，并监听进度
-      let currentCompleted = 0
-      let currentFailed = 0
-      let currentSkipped = 0
+      // 设置进度监听（监听主进程发送的事件）
+      let progressUnsubscribe = null
+      let completeUnsubscribe = null
+      let errorUnsubscribe = null
       
-      // 设置进度监听
-      const progressHandler = (progress) => {
-        if (progress.status === 'completed') {
-          currentCompleted++
-        } else if (progress.status === 'failed') {
-          currentFailed++
-        } else if (progress.status === 'skipped') {
-          currentSkipped++
+      const progressHandler = (data) => {
+        // 更新或创建任务
+        if (data.taskId) {
+          let task = downloadTasks.value.get(data.taskId)
+          if (!task) {
+            task = {
+              id: data.taskId,
+              songId: data.songId,
+              songName: data.songName,
+              status: 'downloading',
+              progress: 0,
+              downloadedSize: 0,
+              totalSize: 0,
+              speed: 0,
+              error: null,
+              startTime: Date.now(),
+              endTime: null
+            }
+            downloadTasks.value.set(data.taskId, task)
+          }
+          
+          // 更新任务状态
+          task.status = data.status || 'downloading'
+          task.progress = data.progress || 0
+          task.downloadedSize = data.downloadedSize || 0
+          task.totalSize = data.totalSize || 0
+          task.speed = data.speed || 0
+          
+          // 触发响应式更新
+          downloadTasks.value = new Map(downloadTasks.value)
         }
         
         if (onProgress) {
-          onProgress({
-            completed: currentCompleted,
-            failed: currentFailed,
-            skipped: currentSkipped
-          })
+          onProgress(data)
         }
       }
       
-      const result = await window.electron.downloadPlaylist(songsWithUrl)
+      const completeHandler = (data) => {
+        if (data.taskId) {
+          const task = downloadTasks.value.get(data.taskId)
+          if (task) {
+            task.status = 'completed'
+            task.progress = 100
+            task.fileSize = data.fileSize || task.downloadedSize
+            task.localPath = data.localPath
+            task.endTime = Date.now()
+            downloadTasks.value = new Map(downloadTasks.value)
+          }
+        }
+      }
+      
+      const errorHandler = (data) => {
+        if (data.taskId) {
+          const task = downloadTasks.value.get(data.taskId)
+          if (task) {
+            task.status = 'failed'
+            task.error = data.error
+            task.endTime = Date.now()
+            downloadTasks.value = new Map(downloadTasks.value)
+          }
+        }
+      }
+      
+      // 监听事件
+      progressUnsubscribe = window.electron.onDownloadProgress(progressHandler)
+      completeUnsubscribe = window.electron.onDownloadComplete?.(completeHandler)
+      errorUnsubscribe = window.electron.onDownloadError?.(errorHandler)
+      
+      try {
+        const result = await window.electron.downloadPlaylist(songsWithUrl)
 
-      if (result.success) {
-        // 注意：result.data.data 才是实际的结果对象
-        const resultData = result.data?.data || result.data || {}
-        const completed = resultData.success || 0
-        const failed = resultData.failed || 0
-        const skipped = resultData.skipped || 0
-        
-        // 最终更新进度
-        if (onProgress) {
-          onProgress({ completed, failed, skipped })
+        if (result.success) {
+          // 注意：result.data.data 才是实际的结果对象
+          const resultData = result.data?.data || result.data || {}
+          const completed = resultData.success || 0
+          const failed = resultData.failed || 0
+          const skipped = resultData.skipped || 0
+          
+          showNotification({
+            type: completed > 0 ? 'success' : 'warning',
+            title: '批量下载完成',
+            content: `成功：${completed} 首，失败：${failed} 首${skipped > 0 ? `，跳过：${skipped} 首` : ''}`
+          })
+          
+          return {
+            success: true,
+            data: {
+              total: songsWithUrl.length,
+              success: completed,
+              failed: failed,
+              skipped: skipped
+            }
+          }
+        } else {
+          error.value = result.error?.message || '批量下载失败'
+          showError(error.value)
+          return {
+            success: false,
+            error: error.value
+          }
         }
-        
-        showNotification({
-          type: completed > 0 ? 'success' : 'warning',
-          title: '批量下载完成',
-          content: `成功：${completed} 首，失败：${failed} 首${skipped > 0 ? `，跳过：${skipped} 首` : ''}`
-        })
-        
-        return {
-          success: true,
-          total: songs.length,
-          completed,
-          failed,
-          skipped
-        }
-      } else {
-        error.value = result.error?.message || '批量下载失败'
-        showError(error.value)
-        return {
-          success: false,
-          error: error.value
-        }
+      } finally {
+        // 清理监听
+        if (progressUnsubscribe) progressUnsubscribe()
+        if (completeUnsubscribe) completeUnsubscribe()
+        if (errorUnsubscribe) errorUnsubscribe()
       }
     } catch (err) {
       error.value = err.message || '批量下载失败'

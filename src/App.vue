@@ -5,6 +5,9 @@
         <n-notification-provider>
           <app-content-wrapper />
           
+          <!-- 下载进度浮窗 -->
+          <download-progress-panel ref="downloadPanel" />
+          
           <!-- API健康检查弹窗 -->
           <n-modal
             v-model:show="showHealthCheck"
@@ -52,13 +55,17 @@ import { setupNotification } from './utils/notification'
 import { useThemeStore } from './stores/theme'
 import { useShortcutsStore } from './stores/shortcuts'
 import { usePlayerStore } from './stores/player'
+import { useDownloadStore } from './stores/download'
 import AppContentWrapper from './components/AppContentWrapper.vue'
+import DownloadProgressPanel from './components/DownloadProgressPanel.vue'
 import './styles/theme.css'
 import './styles/accent-colors.css'
 
 const themeStore = useThemeStore()
 const shortcutsStore = useShortcutsStore()
 const playerStore = usePlayerStore()
+const downloadStore = useDownloadStore()
+const downloadPanel = ref(null)
 
 // API健康检查状态
 const showHealthCheck = ref(false)
@@ -264,6 +271,16 @@ const handleTrayControl = (action) => {
       console.warn('未知的托盘控制动作:', action)
   }
 }
+
+// 显示下载面板
+const showDownloadPanel = () => {
+  if (downloadPanel.value) {
+    downloadPanel.value.show()
+  }
+}
+
+// 暴露给全局使用
+window.__showDownloadPanel = showDownloadPanel
 </script>
 
 <style>

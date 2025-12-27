@@ -101,6 +101,9 @@ function createWindow() {
   // 创建菜单
   createMenu()
 
+  // 创建系统托盘（应用启动时就创建）
+  createTray()
+
   // 监听窗口最大化事件
   mainWindow.on('maximize', () => {
     mainWindow.webContents.send('window-state-change', { isMaximized: true })
@@ -128,11 +131,6 @@ function createWindow() {
       if (closeAction === 'minimize-to-tray') {
         // 最小化到托盘
         mainWindow.hide()
-        
-        // 如果托盘还没创建，创建托盘
-        if (!tray) {
-          createTray()
-        }
       } else {
         // 正常关闭应用
         app.isQuitting = true
@@ -316,6 +314,11 @@ async function createDesktopLyricWindow() {
     : `file://${path.join(__dirname, 'dist/desktop-lyric.html')}`
 
   desktopLyricWindow.loadURL(lyricUrl)
+
+  // 开发模式下打开 DevTools
+  if (isDev) {
+    desktopLyricWindow.webContents.openDevTools({ mode: 'detach' })
+  }
 
   desktopLyricWindow.on('closed', () => {
     if (lyricHoverCheckInterval) {
@@ -506,7 +509,7 @@ ipcMain.on('sync-player-state', (event, state) => {
 
 // 同步歌词到桌面歌词窗口
 ipcMain.on('sync-lyric', (event, lyricData) => {
-  if (desktopLyricWindow) {
+  if (desktopLyricWindow && !desktopLyricWindow.isDestroyed()) {
     desktopLyricWindow.webContents.send('lyric-update', lyricData)
   }
 })
@@ -515,11 +518,22 @@ ipcMain.on('sync-lyric', (event, lyricData) => {
 async function initializeManagers() {
   const userDataPath = app.getPath('userData')
   
-  fileManager = new FileManager(userDataPath)
+  // 读取配置文件获取自定义下载路径
+  const tempFileManager = new FileManager(userDataPath)
+  await tempFileManager.initDataDirectory()
+  
+  const configResult = await tempFileManager.readJSON('settings.json')
+  let customDownloadPath = null
+  
+  if (configResult.success && configResult.data && configResult.data.downloadPath) {
+    customDownloadPath = configResult.data.downloadPath
+  }
+  
+  // 使用自定义下载路径初始化 FileManager
+  fileManager = new FileManager(userDataPath, { customDownloadPath })
   await fileManager.initDataDirectory()
   
   playlistManager = new PlaylistManager(fileManager)
-  // 不传递 downloadPath，使用默认的 fileManager.songsDir
   downloadManager = new DownloadManager(fileManager, playlistManager)
   
   // 初始化默认数据文件（如果不存在）
@@ -878,14 +892,53 @@ function registerIpcHandlers() {
         throw new Error('songs 必须是数组')
       }
       
-      const result = await downloadManager.downloadPlaylist(songs, (progress) => {
-        // 发送进度更新到渲染进程
+      // 设置下载管理器的事件监听，转发进度到渲染进程
+      const progressHandler = (data) => {
         if (mainWindow) {
-          mainWindow.webContents.send('download-progress', progress)
+          mainWindow.webContents.send('download-progress', data)
         }
-      })
+      }
       
-      return createResponse(true, result)
+      const completeHandler = (data) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('download-complete', data)
+        }
+      }
+      
+      const errorHandler = (data) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('download-error', data)
+        }
+      }
+      
+      const allCompleteHandler = (data) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('download-all-complete', data)
+        }
+      }
+      
+      // 监听事件
+      downloadManager.on('progress', progressHandler)
+      downloadManager.on('complete', completeHandler)
+      downloadManager.on('error', errorHandler)
+      downloadManager.on('all-complete', allCompleteHandler)
+      
+      try {
+        const result = await downloadManager.downloadPlaylist(songs, (progress) => {
+          // 发送进度更新到渲染进程
+          if (mainWindow) {
+            mainWindow.webContents.send('download-progress', progress)
+          }
+        })
+        
+        return createResponse(true, result)
+      } finally {
+        // 移除监听
+        downloadManager.off('progress', progressHandler)
+        downloadManager.off('complete', completeHandler)
+        downloadManager.off('error', errorHandler)
+        downloadManager.off('all-complete', allCompleteHandler)
+      }
     } catch (error) {
       return createResponse(false, null, error)
     }
@@ -1064,7 +1117,7 @@ function registerIpcHandlers() {
   ipcMain.handle('open-downloads-folder', async () => {
     try {
       const { shell } = require('electron')
-      const downloadsDir = path.join(app.getPath('userData'), 'downloads')
+      const downloadsDir = fileManager.downloadsDir
       
       // 确保目录存在
       if (!fs.existsSync(downloadsDir)) {
@@ -1074,6 +1127,78 @@ function registerIpcHandlers() {
       // 打开文件夹
       await shell.openPath(downloadsDir)
       return createResponse(true, { path: downloadsDir })
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // ==================== 下载目录管理 ====================
+  
+  // 获取当前下载目录
+  ipcMain.handle('get-download-path', async () => {
+    try {
+      const configResult = await fileManager.readJSON('settings.json')
+      let downloadPath = fileManager.downloadsDir
+      
+      if (configResult.success && configResult.data && configResult.data.downloadPath) {
+        downloadPath = configResult.data.downloadPath
+      }
+      
+      return createResponse(true, { path: downloadPath })
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 选择下载目录
+  ipcMain.handle('select-download-folder', async () => {
+    try {
+      const { dialog } = require('electron')
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: '选择下载目录',
+        properties: ['openDirectory', 'createDirectory']
+      })
+      
+      if (result.canceled) {
+        return createResponse(true, { canceled: true, path: null })
+      }
+      
+      return createResponse(true, { canceled: false, path: result.filePaths[0] })
+    } catch (error) {
+      return createResponse(false, null, error)
+    }
+  })
+
+  // 设置下载目录
+  ipcMain.handle('set-download-path', async (event, newPath) => {
+    try {
+      validateParams({ newPath }, ['newPath'])
+      
+      // 读取或创建配置文件
+      let configResult = await fileManager.readJSON('settings.json')
+      let config = configResult.success ? configResult.data : {}
+      
+      const oldPath = config.downloadPath || fileManager.downloadsDir
+      
+      // 更新配置
+      config.downloadPath = newPath
+      await fileManager.writeJSON('settings.json', config, true)
+      
+      // 更新 PlaylistManager 和 DownloadManager 中的路径
+      const updateResult = await playlistManager.updateDownloadPath(newPath)
+      
+      if (!updateResult.success) {
+        return updateResult
+      }
+      
+      // 更新 DownloadManager 的下载路径
+      downloadManager.downloadPath = fileManager.songsDir
+      
+      return createResponse(true, {
+        oldPath,
+        newPath,
+        message: '下载目录已更新，所有路径已自动调整'
+      })
     } catch (error) {
       return createResponse(false, null, error)
     }

@@ -243,9 +243,6 @@ const loadPlaylistInfo = async () => {
 
 // 加载歌曲列表（分页）
 const loadSongs = async (page = 1) => {
-  if (isLoadingMore.value) return
-  
-  isLoadingMore.value = true
   try {
     const offset = (page - 1) * PAGE_SIZE
     const res = await getPlaylistTracks(route.params.id, PAGE_SIZE, offset)
@@ -259,8 +256,6 @@ const loadSongs = async (page = 1) => {
     }
   } catch (error) {
     console.error('加载歌曲列表失败:', error)
-  } finally {
-    isLoadingMore.value = false
   }
 }
 
@@ -442,8 +437,10 @@ const playAll = async () => {
   playerStore.forceLocalMode = false
   // 设置当前播放列表来源
   playerStore.setCurrentPlaylist(route.params.id, 'online')
-  // 先播放已加载的歌曲
+  
   playerStore.clearPlaylist()
+  
+  // 立即添加已加载的歌曲并播放
   songs.value.forEach(s => {
     playerStore.addToPlaylist({
       id: s.id,
@@ -455,22 +452,19 @@ const playAll = async () => {
   })
   playerStore.play()
   
-  // 如果还有未加载的歌曲，在后台继续加载并添加
-  if (hasMoreSongs.value) {
-    showToast(`开始播放，正在后台加载剩余 ${totalCount.value - songs.value.length} 首歌曲...`, 'success')
-    
-    // 计算需要加载的页数
+  // 后台加载剩余歌曲
+  if (songs.value.length < totalCount.value) {
+    showToast(`正在后台加载剩余 ${totalCount.value - songs.value.length} 首歌曲...`, 'success')
     const totalPages = Math.ceil(totalCount.value / PAGE_SIZE)
-    
-    // 后台加载所有剩余页面
     for (let page = currentPage.value + 1; page <= totalPages; page++) {
       await loadSongs(page)
       currentPage.value = page
       
       // 将新加载的歌曲添加到播放列表
       const startIndex = (page - 1) * PAGE_SIZE
-      const newSongs = songs.value.slice(startIndex)
-      newSongs.forEach(s => {
+      const endIndex = Math.min(page * PAGE_SIZE, songs.value.length)
+      for (let i = startIndex; i < endIndex; i++) {
+        const s = songs.value[i]
         playerStore.addToPlaylist({
           id: s.id,
           name: s.name,
@@ -478,25 +472,26 @@ const playAll = async () => {
           duration: s.dt / 1000,
           cover: s.al?.picUrl || ''
         })
-      })
+      }
     }
-    
     showToast(`全部 ${songs.value.length} 首歌曲已加载完成`, 'success')
   } else {
-    showToast(`已添加 ${songs.value.length} 首歌曲到播放列表`, 'success')
+    showToast(`已添加全部 ${songs.value.length} 首歌曲`, 'success')
   }
 }
 
-const playSong = (song, displayIndex, event) => {
+const playSong = async (song, displayIndex, event) => {
   // 非本地歌单，使用在线播放
   playerStore.forceLocalMode = false
   // 设置当前播放列表来源
   playerStore.setCurrentPlaylist(route.params.id, 'online')
+  
   // 找到歌曲在完整列表中的真实索引
   const realIndex = songs.value.findIndex(s => s.id === song.id)
   
   playerStore.clearPlaylist()
-  // 从点击的歌曲开始添加（使用完整列表）
+  
+  // 立即添加已加载的歌曲（从点击的歌曲开始）并播放
   for (let i = realIndex; i < songs.value.length; i++) {
     const s = songs.value[i]
     playerStore.addToPlaylist({
@@ -508,6 +503,31 @@ const playSong = (song, displayIndex, event) => {
     })
   }
   playerStore.play()
+  
+  // 后台加载剩余歌曲
+  if (songs.value.length < totalCount.value) {
+    showToast(`正在后台加载剩余 ${totalCount.value - songs.value.length} 首歌曲...`, 'success')
+    const totalPages = Math.ceil(totalCount.value / PAGE_SIZE)
+    for (let page = currentPage.value + 1; page <= totalPages; page++) {
+      await loadSongs(page)
+      currentPage.value = page
+      
+      // 将新加载的歌曲添加到播放列表
+      const startIndex = (page - 1) * PAGE_SIZE
+      const endIndex = Math.min(page * PAGE_SIZE, songs.value.length)
+      for (let i = startIndex; i < endIndex; i++) {
+        const s = songs.value[i]
+        playerStore.addToPlaylist({
+          id: s.id,
+          name: s.name,
+          artist: s.ar?.map(a => a.name).join(' / ') || '未知艺术家',
+          duration: s.dt / 1000,
+          cover: s.al?.picUrl || ''
+        })
+      }
+    }
+    showToast(`全部歌曲已加载完成`, 'success')
+  }
   
   // 创建飞行音符动画
   if (event) {
@@ -680,31 +700,69 @@ const downloadSong = async (song) => {
 
 // 下载全部
 const downloadAll = async () => {
-  if (songs.value.length === 0) return
+  if (!playlist.value) return
 
-  showToast(`开始下载 ${songs.value.length} 首歌曲`, 'success')
+  // 显示加载提示
+  showToast(`正在获取完整歌单...`, 'success')
   
-  const songsData = songs.value.map(song => ({
-    id: song.id,
-    name: song.name,
-    artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
-    album: {
-      id: song.al?.id || '',
-      name: song.al?.name || '',
-      picUrl: song.al?.picUrl || ''
-    },
-    duration: song.dt || 0
-  }))
+  try {
+    // 获取完整歌单的所有歌曲
+    let allSongs = []
+    const pageSize = 50
+    const totalPages = Math.ceil(totalCount.value / pageSize)
+    
+    for (let page = 1; page <= totalPages; page++) {
+      const offset = (page - 1) * pageSize
+      const res = await getPlaylistTracks(route.params.id, pageSize, offset)
+      
+      if (res.data.songs) {
+        allSongs = [...allSongs, ...res.data.songs]
+      }
+      
+      // 显示加载进度
+      if (page < totalPages) {
+        showToast(`已获取 ${allSongs.length}/${totalCount.value} 首歌曲`, 'success')
+      }
+    }
+    
+    if (allSongs.length === 0) {
+      showToast('歌单中没有歌曲', 'warning')
+      return
+    }
+    
+    showToast(`开始下载 ${allSongs.length} 首歌曲`, 'success')
+    
+    const songsData = allSongs.map(song => ({
+      id: song.id,
+      name: song.name,
+      artists: song.ar?.map(a => ({ id: a.id, name: a.name })) || [],
+      album: {
+        id: song.al?.id || '',
+        name: song.al?.name || '',
+        picUrl: song.al?.picUrl || ''
+      },
+      duration: song.dt || 0,
+      url: song.url || song.songUrl
+    }))
 
-  const result = await downloadStore.downloadPlaylist(songsData)
-  
-  if (result.success) {
-    showToast(
-      `下载完成：成功 ${result.completed} 首，失败 ${result.failed} 首`,
-      result.failed > 0 ? 'warning' : 'success'
-    )
-  } else {
-    showToast(result.error || '批量下载失败', 'error')
+    // 显示下载面板
+    if (window.__showDownloadPanel) {
+      window.__showDownloadPanel()
+    }
+
+    const result = await downloadStore.downloadPlaylist(songsData)
+    
+    if (result.success) {
+      showToast(
+        `下载完成：成功 ${result.data.success} 首，失败 ${result.data.failed} 首，跳过 ${result.data.skipped} 首`,
+        result.data.failed > 0 ? 'warning' : 'success'
+      )
+    } else {
+      showToast(result.error || '批量下载失败', 'error')
+    }
+  } catch (error) {
+    console.error('下载全部失败:', error)
+    showToast('下载全部失败', 'error')
   }
 }
 

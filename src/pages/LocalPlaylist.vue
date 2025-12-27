@@ -71,6 +71,15 @@
               <span class="folder-icon">📁</span>
               打开下载目录
             </button>
+            <button
+              v-if="isDownloadsPlaylist"
+              @click="selectDownloadFolder"
+              class="set-folder-btn"
+              title="更改下载目录"
+            >
+              <span class="folder-icon">⚙️</span>
+              设置目录
+            </button>
           </div>
         </div>
       </div>
@@ -588,6 +597,11 @@ const downloadAll = async () => {
   // 显示进度对话框
   showDownloadProgress.value = true
   
+  // 显示下载面板
+  if (window.__showDownloadPanel) {
+    window.__showDownloadPanel()
+  }
+  
   const result = await downloadStore.downloadPlaylist(songs.value, (progress) => {
     // 更新进度
     downloadProgress.value.completed = progress.completed || 0
@@ -598,13 +612,13 @@ const downloadAll = async () => {
   downloadProgress.value.isDownloading = false
   
   if (result.success) {
-    downloadProgress.value.completed = result.completed || 0
-    downloadProgress.value.failed = result.failed || 0
-    downloadProgress.value.skipped = result.skipped || 0
+    downloadProgress.value.completed = result.data.success || 0
+    downloadProgress.value.failed = result.data.failed || 0
+    downloadProgress.value.skipped = result.data.skipped || 0
     
     showToast(
-      `下载完成：成功 ${result.completed} 首，失败 ${result.failed} 首${result.skipped > 0 ? `，跳过 ${result.skipped} 首` : ''}`,
-      result.failed > 0 ? 'warning' : 'success'
+      `下载完成：成功 ${result.data.success} 首，失败 ${result.data.failed} 首${result.data.skipped > 0 ? `，跳过 ${result.data.skipped} 首` : ''}`,
+      result.data.failed > 0 ? 'warning' : 'success'
     )
     
     // 重新加载歌单数据
@@ -640,6 +654,66 @@ const openDownloadsFolder = async () => {
   } catch (error) {
     showToast('打开下载目录失败', 'error')
     console.error('打开下载目录错误:', error)
+  }
+}
+
+// 选择下载目录
+const selectDownloadFolder = async () => {
+  try {
+    // 先获取当前下载目录
+    const currentPathResult = await window.electron.getDownloadPath()
+    if (!currentPathResult.success) {
+      showToast('获取当前下载目录失败', 'error')
+      return
+    }
+    
+    const currentPath = currentPathResult.data.path
+    
+    // 显示当前目录并询问是否更改
+    const wantChange = confirm(
+      `当前下载目录：\n${currentPath}\n\n` +
+      `目录结构：\n` +
+      `├─ songs/    (歌曲文件)\n` +
+      `└─ lyrics/   (歌词文件)\n\n` +
+      `是否要更改下载目录？`
+    )
+    
+    if (!wantChange) {
+      return
+    }
+    
+    // 选择新目录
+    const result = await window.electron.selectDownloadFolder()
+    if (result.success && !result.data.canceled) {
+      const newPath = result.data.path
+      
+      // 确认更改
+      const confirmed = confirm(
+        `确定要将下载目录更改为：\n${newPath}\n\n` +
+        `将自动更新：\n` +
+        `• 所有已下载歌曲的路径\n` +
+        `• 所有歌词文件的路径\n` +
+        `• 本地音乐的路径\n\n` +
+        `注意：文件不会自动移动，需要手动移动文件到新目录。`
+      )
+      
+      if (confirmed) {
+        showToast('正在更新下载目录...', 'info')
+        
+        const setResult = await window.electron.setDownloadPath(newPath)
+        
+        if (setResult.success) {
+          showToast('下载目录已更新', 'success')
+          // 重新加载歌单以显示更新后的路径
+          await loadPlaylist()
+        } else {
+          showToast('更新下载目录失败: ' + (setResult.error?.message || '未知错误'), 'error')
+        }
+      }
+    }
+  } catch (error) {
+    console.error('选择下载目录失败:', error)
+    showToast('选择下载目录失败: ' + error.message, 'error')
   }
 }
 
@@ -1073,6 +1147,7 @@ const createFlyingNote = (event) => {
 .play-all-btn,
 .download-all-btn,
 .open-folder-btn,
+.set-folder-btn,
 .import-btn {
   border: none;
   color: white;
@@ -1091,7 +1166,8 @@ const createFlyingNote = (event) => {
 
 .play-all-btn::before,
 .download-all-btn::before,
-.open-folder-btn::before {
+.open-folder-btn::before,
+.set-folder-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1105,13 +1181,15 @@ const createFlyingNote = (event) => {
 
 .play-all-btn:hover::before:not(:disabled),
 .download-all-btn:hover::before:not(:disabled),
-.open-folder-btn:hover::before {
+.open-folder-btn:hover::before,
+.set-folder-btn:hover::before {
   left: 100%;
 }
 
 .play-all-btn,
 .download-all-btn,
-.open-folder-btn {
+.open-folder-btn,
+.set-folder-btn {
   z-index: 1;
 }
 
@@ -1154,6 +1232,20 @@ const createFlyingNote = (event) => {
 }
 
 .open-folder-btn:active {
+  transform: translateY(0);
+}
+
+.set-folder-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
+}
+
+.set-folder-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+}
+
+.set-folder-btn:active {
   transform: translateY(0);
 }
 

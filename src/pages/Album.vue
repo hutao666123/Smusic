@@ -328,15 +328,21 @@ const downloadAll = async () => {
       name: song.al?.name || album.value?.name || '',
       picUrl: song.al?.picUrl || album.value?.picUrl || ''
     },
-    duration: song.dt || 0
+    duration: song.dt || 0,
+    url: song.url || song.songUrl
   }))
+
+  // 显示下载面板
+  if (window.__showDownloadPanel) {
+    window.__showDownloadPanel()
+  }
 
   const result = await downloadStore.downloadPlaylist(songsData)
   
   if (result.success) {
     showToast(
-      `下载完成：成功 ${result.completed} 首，失败 ${result.failed} 首`,
-      result.failed > 0 ? 'warning' : 'success'
+      `下载完成：成功 ${result.data.success} 首，失败 ${result.data.failed} 首，跳过 ${result.data.skipped} 首`,
+      result.data.failed > 0 ? 'warning' : 'success'
     )
   } else {
     showToast(result.error || '批量下载失败', 'error')
