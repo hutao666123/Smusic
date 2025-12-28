@@ -14,6 +14,16 @@
     <div class="title-bar-right">
       <!-- 导航按钮 -->
       <div class="nav-buttons">
+        <!-- 返回顶部按钮 -->
+        <button 
+          class="action-button" 
+          @click="scrollToTop" 
+          title="返回顶部"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M7 14l5-5 5 5z"/>
+          </svg>
+        </button>
         <button class="nav-button" @click="goBack" title="后退">
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
@@ -33,6 +43,19 @@
 
       <!-- 功能按钮 -->
       <div class="action-buttons">
+        
+
+        <!-- 窗口置顶按钮 -->
+        <button 
+          class="action-button" 
+          @click="toggleAlwaysOnTop"
+          :class="{ active: isAlwaysOnTop }"
+          title="窗口置顶"
+        >
+          <svg t="1766894353908" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5267" width="20" height="20">
+            <path d="M831.936 223.936a32 32 0 0 0-32-32h-576a32 32 0 1 0 0 64h576a32 32 0 0 0 32-32zM479.168 460.48V896h64.64V460.16l203.52 196.928 45.76-44.8L511.36 339.2 234.24 609.92l45.824 44.672 199.04-194.176z" p-id="5268"></path></svg>
+        </button>
+
         <!-- 抽屉按钮 -->
         <button class="action-button" @click="showDrawer = true" title="抽屉">
           <svg width="20" height="20" viewBox="0 0 24 24">
@@ -107,6 +130,7 @@ import DrawerDialog from './DrawerDialog.vue'
 const router = useRouter()
 const playerStore = usePlayerStore()
 const isMaximized = ref(false)
+const isAlwaysOnTop = ref(false)
 const showDrawer = ref(false)
 
 // 检查是否可以定位
@@ -132,6 +156,17 @@ const goToSearch = () => {
 
 const goToSettings = () => {
   router.push('/settings')
+}
+
+const scrollToTop = () => {
+  // 获取主内容区域并滚动到顶部
+  const mainContent = document.querySelector('.app-main')
+  if (mainContent) {
+    mainContent.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
 }
 
 const locateCurrentSong = async () => {
@@ -183,6 +218,19 @@ const maximize = () => {
   }
 }
 
+const toggleAlwaysOnTop = async () => {
+  if (window.electron) {
+    try {
+      const result = await window.electron.toggleAlwaysOnTop()
+      if (result.success) {
+        isAlwaysOnTop.value = result.data.isAlwaysOnTop
+      }
+    } catch (error) {
+      console.error('切换置顶状态失败:', error)
+    }
+  }
+}
+
 const close = () => {
   if (window.electron) {
     window.electron.close()
@@ -194,6 +242,13 @@ onMounted(() => {
   if (window.electron && window.electron.onWindowStateChange) {
     window.electron.onWindowStateChange((state) => {
       isMaximized.value = state.isMaximized
+    })
+  }
+  
+  // 监听置顶状态变化
+  if (window.electron && window.electron.onAlwaysOnTopChange) {
+    window.electron.onAlwaysOnTopChange((alwaysOnTop) => {
+      isAlwaysOnTop.value = alwaysOnTop
     })
   }
 })
@@ -321,6 +376,11 @@ onMounted(() => {
 .action-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.action-button.active {
+  background: rgba(102, 126, 234, 0.3);
+  color: #667eea;
 }
 
 /* 窗口控制按钮 */

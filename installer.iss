@@ -1,12 +1,12 @@
 [Setup]
 AppName=Smusic
-AppVersion=1.3
+AppVersion=1.4
 AppPublisher=Smusic
 DefaultDirName={autopf}\Smusic
 DefaultGroupName=Smusic
 AllowNoIcons=yes
 OutputDir=installer-output
-OutputBaseFilename=Smusic-Setup-1.3
+OutputBaseFilename=Smusic-Setup-1.4
 SetupIconFile=assets\icon.ico
 Compression=lzma
 SolidCompression=yes

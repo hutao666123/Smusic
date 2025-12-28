@@ -165,6 +165,30 @@ export const usePlayerStore = defineStore('player', () => {
     volume.value = vol
   }
 
+  /**
+   * 处理蓝牙媒体按键事件
+   * @param {string} action - 按键动作
+   */
+  const handleMediaKeyPress = (action) => {
+    console.log('🎵 处理媒体按键:', action)
+    switch (action) {
+      case 'play':
+        play()
+        break
+      case 'pause':
+        pause()
+        break
+      case 'nexttrack':
+        next()
+        break
+      case 'previoustrack':
+        prev()
+        break
+      default:
+        console.warn('未知的媒体按键动作:', action)
+    }
+  }
+
   return {
     playlist,
     currentIndex,
@@ -189,7 +213,8 @@ export const usePlayerStore = defineStore('player', () => {
     setDuration,
     setVolume,
     getSongPlayUrl,
-    checkLocalSong
+    checkLocalSong,
+    handleMediaKeyPress
   }
 }, {
   persist: {

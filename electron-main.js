@@ -104,6 +104,9 @@ function createWindow() {
   // 创建系统托盘（应用启动时就创建）
   createTray()
 
+  // 只注册全局快捷键，mediaSession 由渲染进程处理
+  setupMediaKeysWithGlobalShortcut(mainWindow)
+
   // 监听窗口最大化事件
   mainWindow.on('maximize', () => {
     mainWindow.webContents.send('window-state-change', { isMaximized: true })
@@ -443,6 +446,33 @@ ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close()
 })
 
+ipcMain.handle('toggle-always-on-top', async () => {
+  try {
+    if (mainWindow) {
+      const currentState = mainWindow.isAlwaysOnTop()
+      const newState = !currentState
+      mainWindow.setAlwaysOnTop(newState)
+      
+      // 通知渲染进程状态变化
+      mainWindow.webContents.send('always-on-top-change', newState)
+      
+      return {
+        success: true,
+        data: { isAlwaysOnTop: newState }
+      }
+    }
+    return {
+      success: false,
+      error: { message: '主窗口不存在' }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: { message: error.message }
+    }
+  }
+})
+
 // 桌面歌词窗口控制
 ipcMain.on('open-desktop-lyric', () => {
   createDesktopLyricWindow()
@@ -512,6 +542,15 @@ ipcMain.on('sync-lyric', (event, lyricData) => {
   if (desktopLyricWindow && !desktopLyricWindow.isDestroyed()) {
     desktopLyricWindow.webContents.send('lyric-update', lyricData)
   }
+})
+
+// ==================== 蓝牙媒体按键 IPC 处理 ====================
+ipcMain.on('update-media-metadata', (event, metadata) => {
+  updateMediaSessionMetadata(metadata)
+})
+
+ipcMain.on('update-media-playback-state', (event, state) => {
+  updateMediaSessionPlaybackState(state)
 })
 
 // 初始化管理器
@@ -647,6 +686,87 @@ function unregisterAllShortcuts() {
 function unregisterShortcut(accelerator) {
   if (accelerator) {
     globalShortcut.unregister(accelerator)
+  }
+}
+
+// ==================== 蓝牙媒体按键处理 ====================
+/**
+ * 使用全局快捷键注册媒体按键
+ * @param {BrowserWindow} window - 主窗口
+ */
+function setupMediaKeysWithGlobalShortcut(window) {
+  const mediaKeys = [
+    { key: 'MediaPlayPause', action: 'playpause' },
+    { key: 'MediaNextTrack', action: 'nexttrack' },
+    { key: 'MediaPreviousTrack', action: 'previoustrack' },
+    { key: 'MediaStop', action: 'stop' }
+  ]
+
+  mediaKeys.forEach(({ key, action }) => {
+    try {
+      const success = globalShortcut.register(key, () => {
+        console.log(`🎵 媒体按键事件: ${action}`)
+        if (window && !window.isDestroyed()) {
+          window.webContents.send('media-key-pressed', action)
+        }
+      })
+      if (success) {
+        console.log(`✅ 媒体按键已注册: ${key}`)
+      } else {
+        console.warn(`⚠️ 媒体按键注册失败: ${key}`)
+      }
+    } catch (error) {
+      console.error(`❌ 注册媒体按键失败 ${key}:`, error.message)
+    }
+  })
+}
+
+/**
+ * 更新媒体会话元数据
+ * @param {Object} metadata - 元数据对象
+ */
+function updateMediaSessionMetadata(metadata) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: '${metadata.title || ''}',
+            artist: '${metadata.artist || ''}',
+            album: '${metadata.album || ''}',
+            artwork: ${metadata.artwork ? `[{ src: '${metadata.artwork}', sizes: '512x512', type: 'image/jpeg' }]` : '[]'}
+          })
+        }
+      `)
+    }
+  } catch (error) {
+    console.warn('更新媒体元数据失败:', error.message)
+  }
+}
+
+/**
+ * 更新媒体会话播放状态
+ * @param {Object} state - 播放状态对象
+ */
+function updateMediaSessionPlaybackState(state) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = '${state.isPlaying ? 'playing' : 'paused'}'
+          if (navigator.mediaSession.setPositionState) {
+            navigator.mediaSession.setPositionState({
+              duration: ${state.duration || 0},
+              playbackRate: 1,
+              position: ${state.currentTime || 0}
+            })
+          }
+          console.log('✅ mediaSession 播放状态已更新:', navigator.mediaSession.playbackState)
+        }
+      `)
+    }
+  } catch (error) {
+    console.warn('更新媒体播放状态失败:', error.message)
   }
 }
 
@@ -1525,6 +1645,13 @@ function handleOpenFile(filePath) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('open-audio-file', filePath)
   }
+}
+
+// Windows 上需要设置 AppUserModelId 才能显示通知栏
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.smusic.app')
+  // 启用媒体键支持
+  app.commandLine.appendSwitch('enable-media-stream')
 }
 
 app.on('ready', async () => {

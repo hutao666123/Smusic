@@ -218,10 +218,33 @@ onMounted(() => {
   // 注册全局快捷键
   registerShortcuts()
   
+  // 注册 mediaSession（系统媒体集成）
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => {
+      playerStore.play()
+    })
+    navigator.mediaSession.setActionHandler('pause', () => {
+      playerStore.pause()
+    })
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      playerStore.next()
+    })
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      playerStore.prev()
+    })
+    console.log('✅ mediaSession 已注册')
+  }
+  
   // 监听快捷键触发
   unsubscribeShortcut = window.electron.onShortcutTriggered((action) => {
     console.log('快捷键触发:', action)
     handleShortcutAction(action)
+  })
+  
+  // 监听蓝牙媒体按键事件
+  const unsubscribeMediaKey = window.electron.onMediaKeyPressed((action) => {
+    console.log('🎵 蓝牙媒体按键事件:', action)
+    playerStore.handleMediaKeyPress(action)
   })
   
   // 监听托盘控制事件

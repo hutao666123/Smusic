@@ -420,6 +420,16 @@ onMounted(() => {
     })
   }
 
+  // 初始化蓝牙媒体会话元数据
+  if (currentSong.value && 'mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentSong.value.name || '',
+      artist: currentSong.value.artist || '',
+      album: currentSong.value.album || '',
+      artwork: currentSong.value.cover ? [{ src: currentSong.value.cover, sizes: '512x512', type: 'image/jpeg' }] : []
+    })
+  }
+
   // 点击外部关闭更多菜单
   document.addEventListener('click', (e) => {
     const moreMenuContainer = document.querySelector('.more-menu-container')
@@ -570,6 +580,11 @@ watch(isPlaying, (newVal) => {
   }
   // 同步播放状态到桌面歌词
   syncToDesktopLyric()
+  
+  // 同步播放状态到蓝牙媒体会话
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = newVal ? 'playing' : 'paused'
+  }
 })
 
 // 监听当前歌曲变化
@@ -588,6 +603,16 @@ watch(currentSong, async (newSong, oldSong) => {
     syncToDesktopLyric()
     loadAndSyncLyric(newSong.id)
     
+    // 同步元数据到蓝牙媒体会话
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: newSong.name || '',
+        artist: newSong.artist || '',
+        album: newSong.album || '',
+        artwork: newSong.cover ? [{ src: newSong.cover, sizes: '512x512', type: 'image/jpeg' }] : []
+      })
+    }
+    
     // 获取歌曲详情以获取图片
     if (!fetchedCovers.has(newSong.id)) {
       fetchedCovers.add(newSong.id)
@@ -600,6 +625,15 @@ watch(currentSong, async (newSong, oldSong) => {
             // 更新播放列表中的封面
             if (!newSong.cover) {
               newSong.cover = song.al.picUrl
+            }
+            // 更新蓝牙媒体会话的封面
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.metadata = new MediaMetadata({
+                title: newSong.name || '',
+                artist: newSong.artist || '',
+                album: newSong.album || '',
+                artwork: [{ src: song.al.picUrl, sizes: '512x512', type: 'image/jpeg' }]
+              })
             }
           }
         }
@@ -807,6 +841,17 @@ watch(currentTime, (time) => {
     }
     
     window.electron.syncLyric({ lyric: lyricText, nextLyric: nextLyricText })
+  }
+  
+  // 同步播放进度到蓝牙媒体会话（节流更新，避免频繁调用）
+  if (Math.floor(time) % 1 === 0 && 'mediaSession' in navigator) {
+    if (navigator.mediaSession.setPositionState) {
+      navigator.mediaSession.setPositionState({
+        duration: duration.value,
+        playbackRate: 1,
+        position: time
+      })
+    }
   }
 })
 

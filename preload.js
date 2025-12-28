@@ -36,10 +36,16 @@ contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+  toggleAlwaysOnTop: () => ipcRenderer.invoke('toggle-always-on-top'),
   
   // 监听窗口状态变化
   onWindowStateChange: (callback) => {
     ipcRenderer.on('window-state-change', (event, state) => callback(state))
+  },
+  
+  // 监听置顶状态变化
+  onAlwaysOnTopChange: (callback) => {
+    ipcRenderer.on('always-on-top-change', (event, isAlwaysOnTop) => callback(isAlwaysOnTop))
   },
 
   // 桌面歌词窗口控制
@@ -461,6 +467,34 @@ contextBridge.exposeInMainWorld('electron', {
     const listener = (event, filePath) => callback(filePath)
     ipcRenderer.on('open-audio-file', listener)
     return () => ipcRenderer.removeListener('open-audio-file', listener)
+  },
+
+  // ==================== 蓝牙媒体按键 ====================
+  /**
+   * 监听蓝牙媒体按键事件
+   * @param {Function} callback - 回调函数，接收按键动作
+   * @returns {Function} - 取消监听的函数
+   */
+  onMediaKeyPressed: (callback) => {
+    const listener = (event, action) => callback(action)
+    ipcRenderer.on('media-key-pressed', listener)
+    return () => ipcRenderer.removeListener('media-key-pressed', listener)
+  },
+
+  /**
+   * 更新媒体会话元数据
+   * @param {Object} metadata - 元数据对象 { title, artist, album, artwork }
+   */
+  updateMediaMetadata: (metadata) => {
+    ipcRenderer.send('update-media-metadata', metadata)
+  },
+
+  /**
+   * 更新媒体会话播放状态
+   * @param {Object} state - 播放状态对象 { isPlaying, duration, currentTime }
+   */
+  updateMediaPlaybackState: (state) => {
+    ipcRenderer.send('update-media-playback-state', state)
   },
 
   // ==================== 本地音乐导入 ====================

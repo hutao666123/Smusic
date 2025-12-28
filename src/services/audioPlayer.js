@@ -141,6 +141,18 @@ class AudioPlayer {
         await this.audio.play()
         this.playerStore.play()
         this.isLoading = false
+        
+        // 同步蓝牙媒体会话状态
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'playing'
+          if (navigator.mediaSession.setPositionState) {
+            navigator.mediaSession.setPositionState({
+              duration: this.audio.duration || 0,
+              playbackRate: 1,
+              position: this.audio.currentTime || 0
+            })
+          }
+        }
       } catch (playError) {
         // 处理 play() 被中断的情况
         if (playError.name === 'AbortError') {
